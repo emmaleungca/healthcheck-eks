@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quality Guard AI — Results</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#FCFAF9;
+    --ink:#0D0D0D;
+    --red:#E11D2E;
+    --red-dark:#A3121F;
+    --red-soft:#FDECEC;
+    --red-soft-2:#FBDCDD;
+    --green:#15803D;
+    --green-soft:#E9F7EE;
+    --green-border:#CFE9D8;
+    --gray-700:#544F49;
+    --gray-600:#6B6862;
+    --gray-400:#9A968E;
+    --gray-200:#F1EEEA;
+    --border:#EAE6E0;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 1px 1px, #00000009 1px, transparent 0);
+    background-size:26px 26px;
+    min-height:100vh;
+  }
+  .topbar{ height:4px; background:linear-gradient(90deg, var(--red-dark), var(--red)); }
+
+  .wrap{ max-width:980px; margin:0 auto; padding:28px 32px 100px; }
+
+  .back{
+    display:inline-flex; align-items:center; gap:7px; font-family:var(--mono);
+    font-size:13px; font-weight:500; color:var(--gray-600); text-decoration:none; cursor:pointer;
+    background:transparent; border:none; border-radius:7px; padding:7px 10px 7px 8px;
+    margin-left:-8px; transition:background .15s ease, color .15s ease;
+  }
+  .back:hover{ background:var(--gray-200); color:var(--ink); }
+  .back:hover svg{ transform:translateX(-2px); }
+  .back svg{ width:14px; height:14px; transition:transform .15s ease; }
+
+  .brand{ display:flex; align-items:center; gap:12px; margin:26px 0 22px; }
+  .brand-icon{
+    width:34px; height:34px; border-radius:9px; background:var(--red-soft);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .brand-icon svg{ width:18px; height:18px; stroke:var(--red); }
+  .brand h1{ font-family:var(--mono); font-weight:800; font-size:26px; letter-spacing:-0.01em; }
+
+  /* ---------- STEPPER ---------- */
+  .stepper{
+    display:flex; align-items:center; gap:30px; border-bottom:1px solid var(--border);
+    margin-bottom:32px;
+  }
+  .step{
+    display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:14px;
+    color:var(--gray-400); padding-bottom:14px; position:relative; cursor:pointer;
+  }
+  .step .num{
+    width:22px; height:22px; border-radius:50%; border:1.5px solid var(--gray-400);
+    display:flex; align-items:center; justify-content:center; font-size:11px;
+  }
+  .step.done .num{ border-color:var(--green); color:#fff; background:var(--green); }
+  .step.done{ color:var(--gray-700); }
+  .step.active{ color:var(--ink); }
+  .step.active .num{ border-color:var(--red); color:#fff; background:var(--red); }
+  .step.active::after{
+    content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--red);
+  }
+
+  /* ---------- SUCCESS BANNER ---------- */
+  .success{
+    background:var(--green-soft); border:1px solid var(--green-border); border-radius:14px;
+    padding:26px 28px; display:flex; align-items:center; gap:18px; margin-bottom:28px;
+  }
+  .success-icon{
+    width:46px; height:46px; border-radius:50%; background:var(--green); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .success-icon svg{ width:22px; height:22px; stroke:#fff; }
+  .success h2{ font-family:var(--mono); font-size:19px; color:#0E5A2C; margin-bottom:4px; }
+  .success p{ font-size:14px; color:#2F6B45; line-height:1.5; }
+
+  /* ---------- SECTION HEAD ---------- */
+  .section-head{ margin-bottom:8px; display:flex; align-items:center; gap:12px; }
+  .section-head::before{ content:''; width:4px; height:22px; background:var(--red); border-radius:2px; }
+  .section-head h2{ font-family:var(--mono); font-size:22px; font-weight:700; flex:1; }
+  .section-desc{ color:var(--gray-600); font-size:14.5px; line-height:1.6; margin:8px 0 24px 16px; max-width:640px; }
+
+  /* ---------- METRICS ---------- */
+  .metrics{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+  .metric{
+    background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+  }
+  .metric-label{ font-family:var(--mono); font-size:11px; color:var(--gray-400); letter-spacing:.05em; margin-bottom:8px; }
+  .metric-value{ font-family:var(--mono); font-size:24px; font-weight:700; }
+  .metric-value.good{ color:var(--green); }
+  .metric-sub{ font-size:12px; color:var(--gray-400); margin-top:3px; }
+
+  /* ---------- OUTPUTS ---------- */
+  .outputs{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px; }
+  .output-card{
+    background:#fff; border:1px solid var(--border); border-radius:14px; padding:22px;
+    box-shadow:0 1px 2px rgba(20,10,8,0.03); display:flex; flex-direction:column; gap:14px;
+  }
+  .output-icon{
+    width:40px; height:40px; border-radius:10px; background:var(--red-soft);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .output-icon svg{ width:19px; height:19px; stroke:var(--red); }
+  .output-card h3{ font-family:var(--mono); font-size:15.5px; }
+  .output-card p{ font-size:13.5px; color:var(--gray-600); line-height:1.55; flex:1; }
+  .output-btn{
+    font-family:var(--mono); font-size:13px; font-weight:500; padding:11px 16px;
+    border-radius:8px; border:1px solid var(--border); background:#fff; color:var(--ink);
+    cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .output-btn:hover{ background:var(--gray-200); }
+  .output-btn.primary{ background:var(--red); color:#fff; border-color:var(--red); }
+  .output-btn.primary:hover{ background:var(--red-dark); }
+  .output-btn svg{ width:14px; height:14px; }
+
+  /* ---------- SAVED LIST ---------- */
+  .group{
+    background:#fff; border:1px solid var(--border); border-radius:14px; margin-bottom:16px;
+    box-shadow:0 1px 2px rgba(20,10,8,0.03); overflow:hidden;
+  }
+  .group-head{
+    display:flex; align-items:center; gap:14px; padding:15px 20px; border-bottom:1px solid var(--border);
+  }
+  .group-key{ font-family:var(--mono); font-size:13.5px; font-weight:700; color:var(--red-dark); }
+  .group-title{ font-size:13.5px; color:var(--gray-700); flex:1; }
+  .jira-link{
+    font-family:var(--mono); font-size:12px; color:var(--gray-600); text-decoration:none;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .jira-link:hover{ color:var(--red-dark); }
+  .jira-link svg{ width:12px; height:12px; }
+
+  .rows{ padding:2px 20px; }
+  .row{
+    display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--border);
+  }
+  .rows .row:first-child{ border-top:none; }
+  .row-id{ font-family:var(--mono); font-size:12.5px; color:var(--gray-400); width:56px; flex-shrink:0; }
+  .row-title{ font-size:14px; flex:1; }
+  .row-status{
+    display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px;
+    color:var(--green); flex-shrink:0;
+  }
+  .row-status svg{ width:12px; height:12px; stroke:var(--green); }
+
+  @media (max-width:820px){
+    .metrics{ grid-template-columns:1fr 1fr; }
+    .outputs{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+
+<div class="wrap">
+  <span class="back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Back to home
+  </span>
+
+  <div class="brand">
+    <span class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+    </span>
+    <h1>Quality Guard AI</h1>
+  </div>
+
+  <div class="stepper">
+    <div class="step done"><span class="num">✓</span>Create</div>
+    <div class="step done"><span class="num">✓</span>Review</div>
+    <div class="step active"><span class="num">3</span>Results</div>
+  </div>
+
+  <div class="success">
+    <span class="success-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </span>
+    <div>
+      <h2>16 test cases saved</h2>
+      <p>Written to Jira across 3 stories, tagged AI_Generated · Highest priority. 1 deselected case was not saved.</p>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">SAVED</div>
+      <div class="metric-value good">16</div>
+      <div class="metric-sub">of 17 generated</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">STORIES UPDATED</div>
+      <div class="metric-value">3</div>
+      <div class="metric-sub">DBH-78237, 75525, 79840</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">AC COVERAGE</div>
+      <div class="metric-value good">100%</div>
+      <div class="metric-sub">22 of 22 ACs</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">RUN TIME</div>
+      <div class="metric-value">41s</div>
+      <div class="metric-sub">generation to save</div>
+    </div>
+  </div>
+
+  <div class="outputs">
+    <div class="output-card">
+      <span class="output-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-4-4m4 4 4-4M4 19h16"/></svg>
+      </span>
+      <h3>Traceability matrix</h3>
+      <p>Maps every acceptance criterion to the test case that covers it, including the 9 negative cases.</p>
+      <button class="output-btn primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-4-4m4 4 4-4M4 19h16"/></svg>
+        Download RTM (Excel)
+      </button>
+    </div>
+    <div class="output-card">
+      <span class="output-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7a5 5 0 0 1 0-10h2m6 10h2a5 5 0 0 0 0-10h-2M8 12h8"/></svg>
+      </span>
+      <h3>Jira test cases</h3>
+      <p>All 16 saved cases are attached to their parent stories under the AI_Generated label.</p>
+      <button class="output-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+        Open in Jira
+      </button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-head">
+      <span class="group-key">DBH-78237</span>
+      <span class="group-title">OAuth login with 2FA fallback · 4 cases</span>
+      <a class="jira-link" href="#">
+        View story
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+      </a>
+    </div>
+    <div class="rows">
+      <div class="row"><span class="row-id">TC-014</span><span class="row-title">Sign in succeeds with valid OAuth provider</span><span class="row-status"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Saved</span></div>
+      <div class="row"><span class="row-id">TC-015</span><span class="row-title">Falls back to 2FA code on provider timeout</span><span class="row-status"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Saved</span></div>
+      <div class="row"><span class="row-id">TC-016</span><span class="row-title">Rejects expired 2FA code with clear error</span><span class="row-status"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Saved</span></div>
+      <div class="row"><span class="row-id">TC-017</span><span class="row-title">Locks account after 5 failed 2FA attempts</span><span class="row-status"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Saved</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-head">
+      <span class="group-key">DBH-75525</span>
+      <span class="group-title">Payee migration to new ledger · 8 cases</span>
+      <a class="jira-link" href="#">
+        View story
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+      </a>
+    </div>
+    <div class="rows">
+      <div class="row"><span class="row-id">TC-018</span><span class="row-title">Migrated payee retains existing payment history</span><span class="row-status"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Saved</span></div>
+      <div class="row"><span class="row-id">TC-019</span><span class="row-title">Non-migrated payee is excluded from batch</span><span class="row-status"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Saved</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-head">
+      <span class="group-key">DBH-79840</span>
+      <span class="group-title">Notification preferences panel · 1 case</span>
+      <a class="jira-link" href="#">
+        View story
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+      </a>
+    </div>
+    <div class="rows">
+      <div class="row"><span class="row-id">TC-024</span><span class="row-title">User can toggle email notifications off</span><span class="row-status"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Saved</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

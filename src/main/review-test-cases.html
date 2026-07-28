@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quality Guard AI — Review</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#FCFAF9;
+    --ink:#0D0D0D;
+    --red:#E11D2E;
+    --red-dark:#A3121F;
+    --red-soft:#FDECEC;
+    --red-soft-2:#FBDCDD;
+    --green:#15803D;
+    --green-soft:#E9F7EE;
+    --amber:#B45309;
+    --amber-soft:#FDF3E3;
+    --gray-700:#544F49;
+    --gray-600:#6B6862;
+    --gray-400:#9A968E;
+    --gray-200:#F1EEEA;
+    --border:#EAE6E0;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 1px 1px, #00000009 1px, transparent 0);
+    background-size:26px 26px;
+    min-height:100vh;
+  }
+  .topbar{ height:4px; background:linear-gradient(90deg, var(--red-dark), var(--red)); }
+
+  .wrap{ max-width:980px; margin:0 auto; padding:28px 32px 120px; }
+
+  .back{
+    display:inline-flex; align-items:center; gap:7px; font-family:var(--mono);
+    font-size:13px; font-weight:500; color:var(--gray-600); text-decoration:none; cursor:pointer;
+    background:transparent; border:none; border-radius:7px; padding:7px 10px 7px 8px;
+    margin-left:-8px; transition:background .15s ease, color .15s ease;
+  }
+  .back:hover{ background:var(--gray-200); color:var(--ink); }
+  .back:hover svg{ transform:translateX(-2px); }
+  .back svg{ width:14px; height:14px; transition:transform .15s ease; }
+
+  .brand{ display:flex; align-items:center; gap:12px; margin:26px 0 22px; }
+  .brand-icon{
+    width:34px; height:34px; border-radius:9px; background:var(--red-soft);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .brand-icon svg{ width:18px; height:18px; stroke:var(--red); }
+  .brand h1{ font-family:var(--mono); font-weight:800; font-size:26px; letter-spacing:-0.01em; }
+
+  /* ---------- STEPPER ---------- */
+  .stepper{
+    display:flex; align-items:center; gap:30px; border-bottom:1px solid var(--border);
+    margin-bottom:32px;
+  }
+  .step{
+    display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:14px;
+    color:var(--gray-400); padding-bottom:14px; position:relative; cursor:pointer;
+  }
+  .step .num{
+    width:22px; height:22px; border-radius:50%; border:1.5px solid var(--gray-400);
+    display:flex; align-items:center; justify-content:center; font-size:11px;
+  }
+  .step.done .num{ border-color:var(--green); color:#fff; background:var(--green); }
+  .step.done{ color:var(--gray-700); }
+  .step.active{ color:var(--ink); }
+  .step.active .num{ border-color:var(--red); color:#fff; background:var(--red); }
+  .step.active::after{
+    content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--red);
+  }
+
+  /* ---------- SECTION HEAD ---------- */
+  .section-head{ margin-bottom:8px; display:flex; align-items:center; gap:12px; }
+  .section-head::before{ content:''; width:4px; height:22px; background:var(--red); border-radius:2px; }
+  .section-head h2{ font-family:var(--mono); font-size:22px; font-weight:700; flex:1; }
+  .section-desc{ color:var(--gray-600); font-size:14.5px; line-height:1.6; margin:8px 0 24px 16px; max-width:640px; }
+
+  /* ---------- SUMMARY METRICS ---------- */
+  .metrics{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+  .metric{
+    background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+  }
+  .metric-label{ font-family:var(--mono); font-size:11px; color:var(--gray-400); letter-spacing:.05em; margin-bottom:8px; }
+  .metric-value{ font-family:var(--mono); font-size:24px; font-weight:700; }
+  .metric-value.warn{ color:var(--amber); }
+  .metric-value.good{ color:var(--green); }
+  .metric-sub{ font-size:12px; color:var(--gray-400); margin-top:3px; }
+
+  /* ---------- STORY GROUPS ---------- */
+  .group{
+    background:#fff; border:1px solid var(--border); border-radius:14px; margin-bottom:16px;
+    box-shadow:0 1px 2px rgba(20,10,8,0.03); overflow:hidden;
+  }
+  .group-head{
+    display:flex; align-items:center; gap:14px; padding:16px 20px; cursor:pointer;
+    border-bottom:1px solid var(--border);
+  }
+  .group-head .chev{ width:16px; height:16px; stroke:var(--gray-400); transition:transform .15s ease; flex-shrink:0; }
+  .group-key{ font-family:var(--mono); font-size:13.5px; font-weight:700; color:var(--red-dark); }
+  .group-title{ font-size:13.5px; color:var(--gray-700); flex:1; }
+  .cov-badge{
+    display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11.5px;
+    padding:5px 11px; border-radius:100px; font-weight:500; flex-shrink:0;
+  }
+  .cov-badge.full{ background:var(--green-soft); color:var(--green); }
+  .cov-badge.flag{ background:var(--amber-soft); color:var(--amber); }
+  .group-count{ font-family:var(--mono); font-size:12px; color:var(--gray-400); flex-shrink:0; }
+
+  .rows{ padding:4px 20px; }
+  .row{
+    display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--border);
+  }
+  .rows .row:first-child{ border-top:none; }
+  .row input[type=checkbox]{
+    width:17px; height:17px; accent-color:var(--red); flex-shrink:0; cursor:pointer;
+  }
+  .row-id{ font-family:var(--mono); font-size:12.5px; color:var(--gray-400); width:56px; flex-shrink:0; }
+  .row-title{ font-size:14px; flex:1; }
+  .row-tag{
+    font-family:var(--mono); font-size:10.5px; padding:3px 9px; border-radius:6px;
+    background:var(--gray-200); color:var(--gray-700); flex-shrink:0;
+  }
+  .row-tag.neg{ background:var(--red-soft); color:var(--red-dark); }
+  .row-action{
+    font-family:var(--mono); font-size:12px; color:var(--gray-600); background:none; border:none;
+    cursor:pointer; padding:5px 8px; border-radius:6px; flex-shrink:0;
+  }
+  .row-action:hover{ background:var(--gray-200); color:var(--ink); }
+
+  .flag-note{
+    display:flex; gap:10px; align-items:flex-start; margin:4px 20px 16px;
+    background:var(--amber-soft); border:1px solid #F3DDB0; border-radius:9px; padding:11px 14px;
+    font-size:13px; color:#7C4A08; line-height:1.5;
+  }
+  .flag-note svg{ width:15px; height:15px; stroke:var(--amber); flex-shrink:0; margin-top:1px; }
+
+  /* ---------- FOOTER ---------- */
+  .footer-bar{
+    position:sticky; bottom:0; margin-top:24px;
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    box-shadow:0 1px 2px rgba(20,10,8,0.04), 0 20px 40px -30px rgba(20,10,8,0.2);
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:18px 24px;
+  }
+  .footer-left{ display:flex; align-items:center; gap:10px; }
+  .footer-left b{ font-size:14px; }
+  .footer-left span{ font-size:12.5px; color:var(--gray-400); display:block; margin-top:2px; }
+
+  .btn{
+    font-family:var(--mono); font-size:14px; font-weight:500;
+    padding:13px 22px; border-radius:9px; cursor:pointer; border:none;
+    display:inline-flex; align-items:center; gap:8px; flex-shrink:0;
+  }
+  .btn svg{ width:15px; height:15px; }
+  .btn-primary{ background:var(--red); color:#fff; }
+  .btn-primary:hover{ background:var(--red-dark); }
+  .btn-ghost{
+    background:#fff; color:var(--ink); border:1px solid var(--border);
+  }
+  .btn-ghost:hover{ background:var(--gray-200); }
+  .btn:active{ transform:scale(.98); }
+  .btn-sm{ padding:9px 16px; font-size:13px; }
+  .btn-sm svg{ width:14px; height:14px; }
+
+  @media (max-width:820px){
+    .metrics{ grid-template-columns:1fr 1fr; }
+    .footer-bar{ flex-direction:column; align-items:stretch; }
+    .footer-left{ justify-content:center; text-align:center; flex-direction:column; gap:2px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+
+<div class="wrap">
+  <span class="back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Back to home
+  </span>
+
+  <div class="brand">
+    <span class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+    </span>
+    <h1>Quality Guard AI</h1>
+  </div>
+
+  <div class="stepper">
+    <div class="step done"><span class="num">✓</span>Create</div>
+    <div class="step active"><span class="num">2</span>Review</div>
+    <div class="step"><span class="num">3</span>Results</div>
+  </div>
+
+  <div class="section-head">
+    <h2>2 · Review test cases</h2>
+    <button class="btn btn-ghost btn-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-4-4m4 4 4-4M4 19h16"/></svg>
+      Download RTM (Excel)
+    </button>
+  </div>
+  <p class="section-desc">Check generated coverage against each story's acceptance criteria before saving. Uncheck any case you don't want carried forward.</p>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">TEST CASES</div>
+      <div class="metric-value">17</div>
+      <div class="metric-sub">across 3 stories</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">AC COVERAGE</div>
+      <div class="metric-value good">100%</div>
+      <div class="metric-sub">22 of 22 ACs</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">NEGATIVE CASES</div>
+      <div class="metric-value">9</div>
+      <div class="metric-sub">≥ 1 per AC</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">FLAGGED</div>
+      <div class="metric-value warn">1</div>
+      <div class="metric-sub">zero-AC story</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-head">
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <span class="group-key">DBH-78237</span>
+      <span class="group-title">OAuth login with 2FA fallback</span>
+      <span class="cov-badge full">✓ 8/8 ACs</span>
+      <span class="group-count">7 cases</span>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <input type="checkbox" checked>
+        <span class="row-id">TC-014</span>
+        <span class="row-title">Sign in succeeds with valid OAuth provider</span>
+        <span class="row-tag">Positive</span>
+        <button class="row-action">View</button>
+      </div>
+      <div class="row">
+        <input type="checkbox" checked>
+        <span class="row-id">TC-015</span>
+        <span class="row-title">Falls back to 2FA code on provider timeout</span>
+        <span class="row-tag">Positive</span>
+        <button class="row-action">View</button>
+      </div>
+      <div class="row">
+        <input type="checkbox" checked>
+        <span class="row-id">TC-016</span>
+        <span class="row-title">Rejects expired 2FA code with clear error</span>
+        <span class="row-tag neg">Negative</span>
+        <button class="row-action">View</button>
+      </div>
+      <div class="row">
+        <input type="checkbox" checked>
+        <span class="row-id">TC-017</span>
+        <span class="row-title">Locks account after 5 failed 2FA attempts</span>
+        <span class="row-tag neg">Negative</span>
+        <button class="row-action">View</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-head">
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <span class="group-key">DBH-75525</span>
+      <span class="group-title">Payee migration to new ledger</span>
+      <span class="cov-badge full">✓ 10/10 ACs</span>
+      <span class="group-count">8 cases</span>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <input type="checkbox" checked>
+        <span class="row-id">TC-018</span>
+        <span class="row-title">Migrated payee retains existing payment history</span>
+        <span class="row-tag">Positive</span>
+        <button class="row-action">View</button>
+      </div>
+      <div class="row">
+        <input type="checkbox" checked>
+        <span class="row-id">TC-019</span>
+        <span class="row-title">Non-migrated payee is excluded from batch</span>
+        <span class="row-tag neg">Negative</span>
+        <button class="row-action">View</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-head">
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <span class="group-key">DBH-79840</span>
+      <span class="group-title">Notification preferences panel</span>
+      <span class="cov-badge flag">⚑ 0 ACs found</span>
+      <span class="group-count">2 cases</span>
+    </div>
+    <div class="flag-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      No acceptance criteria found on this story. The cases below were drafted from the description only — review carefully before saving.
+    </div>
+    <div class="rows">
+      <div class="row">
+        <input type="checkbox" checked>
+        <span class="row-id">TC-024</span>
+        <span class="row-title">User can toggle email notifications off</span>
+        <span class="row-tag">Positive</span>
+        <button class="row-action">View</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <div class="footer-left">
+      <b>16 of 17 cases selected</b>
+      <span>Deselected cases won't be saved or included in the RTM</span>
+    </div>
+    <button class="btn btn-primary">
+      Approve & continue
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+</div>
+
+</body>
+</html>

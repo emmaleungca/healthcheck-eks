@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quality Guard AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#FCFAF9;
+    --ink:#0D0D0D;
+    --red:#E11D2E;
+    --red-dark:#A3121F;
+    --red-soft:#FDECEC;
+    --red-soft-2:#FBDCDD;
+    --green:#15803D;
+    --green-soft:#E9F7EE;
+    --gray-600:#6B6862;
+    --gray-400:#9A968E;
+    --border:#EAE6E0;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(circle at 1px 1px, #00000009 1px, transparent 0),
+      radial-gradient(ellipse 900px 420px at 50% -60px, #FBDCDD66, transparent);
+    background-size:26px 26px, 100% 100%;
+  }
+  .topbar{ height:4px; background:linear-gradient(90deg, var(--red-dark), var(--red)); }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+
+  /* ---------- HERO ---------- */
+  .hero{ padding:96px 0 88px; text-align:center; }
+  .badge{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--red-soft); border:1px solid var(--red-soft-2);
+    color:var(--red-dark); font-family:var(--mono); font-size:12.5px;
+    letter-spacing:.06em; padding:8px 18px; border-radius:100px; font-weight:500;
+  }
+  .badge svg{ width:14px; height:14px; }
+
+  h1{
+    font-family:var(--mono); font-weight:800; letter-spacing:-0.02em;
+    font-size:68px; line-height:1.02; margin:28px 0 24px;
+  }
+  h1 .accent{
+    color:var(--red);
+    text-shadow:0 0 34px #E11D2E33;
+  }
+
+  .lede{
+    max-width:640px; margin:0 auto; font-size:19px; line-height:1.6;
+    color:#3A3733;
+  }
+  .divider{
+    width:52px; height:2px; background:var(--red); border:none;
+    margin:28px auto 22px; border-radius:2px;
+  }
+  .tag{
+    font-family:var(--mono); font-size:13px; color:var(--gray-400);
+    letter-spacing:.03em;
+  }
+
+  /* ---------- CARDS ---------- */
+  .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; padding-bottom:120px; }
+  .card{
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    padding:30px 26px 28px; position:relative;
+    box-shadow:0 1px 2px rgba(20,10,8,0.04), 0 16px 32px -26px rgba(20,10,8,0.18);
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 1px 2px rgba(20,10,8,0.04), 0 26px 44px -22px rgba(20,10,8,0.24);
+    border-color:#DED8CF;
+  }
+  .card-icon{
+    width:46px; height:46px; border-radius:11px; background:var(--red-soft);
+    display:flex; align-items:center; justify-content:center; margin-bottom:22px;
+    box-shadow:inset 0 0 0 1px var(--red-soft-2);
+  }
+  .card-icon svg{ width:20px; height:20px; stroke:var(--red); }
+  .idx{
+    position:absolute; top:28px; right:26px; font-family:var(--mono); font-size:12px;
+    color:var(--gray-400); letter-spacing:.05em;
+  }
+  .card h3{ font-family:var(--mono); font-size:18.5px; margin-bottom:11px; letter-spacing:-0.01em; }
+  .card p{ color:var(--gray-600); font-size:14.5px; line-height:1.65; }
+
+  .card.magic{
+    background:#FAF9F7;
+    border-color:var(--border);
+    box-shadow:0 1px 2px rgba(20,10,8,0.03);
+  }
+  .card.magic:hover{ transform:none; box-shadow:0 1px 2px rgba(20,10,8,0.03); }
+  .card.magic .idx{ color:var(--gray-400); }
+  .card.magic h3{ color:var(--gray-400); }
+  .card.magic p{ color:var(--gray-400); }
+  .card.magic .card-icon{ background:#F1EEEA; }
+  .card.magic .card-icon svg{ stroke:var(--gray-400); }
+  .soon{
+    display:inline-flex; align-items:center; gap:6px; margin-top:18px;
+    font-family:var(--mono); font-size:11.5px; color:var(--gray-400); font-weight:500;
+  }
+  .soon-dot{ width:6px; height:6px; border-radius:50%; background:var(--gray-400); }
+
+  @media (max-width:860px){
+    h1{ font-size:44px; }
+    .cards{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+
+<div class="wrap">
+  <section class="hero">
+    <h1>Quality Guard <span class="accent">AI</span></h1>
+
+    <p class="lede">Stop writing test cases by hand. Describe what you're building and let AI generate rigorous, structured test cases — preconditions, steps, and expected results — in seconds.</p>
+
+    <hr class="divider">
+    <p class="tag">Built for QA engineers who move fast.</p>
+  </section>
+
+  <section class="cards">
+    <div class="card">
+      <span class="idx">01</span>
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <h3>Create test case</h3>
+      <p>Describe a feature or user story and AI generates a complete, structured test case instantly.</p>
+    </div>
+    <div class="card">
+      <span class="idx">02</span>
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+      <h3>Modify test case</h3>
+      <p>Select an existing test case and refine it — update steps, requirements, or expected results.</p>
+    </div>
+    <div class="card magic">
+      <span class="idx">03</span>
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.6 4.8L18 9.5l-4.4 1.7L12 16l-1.6-4.8L6 9.5l4.4-1.7L12 3Z"/></svg></div>
+      <h3>Something magic</h3>
+      <p>We're cooking up something extraordinary. The future of test automation is almost here.</p>
+      <span class="soon"><span class="soon-dot"></span>Coming soon</span>
+    </div>
+  </section>
+</div>
+
+</body>
+</html>
