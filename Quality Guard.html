@@ -1,0 +1,1168 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Quality Guard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell — slim top bar, centered 1120px workspace; home = two large "start" cards, Test case card unfolds into its own sub-menu; each sub-screen keeps a breadcrumb back to home. */
+:root{
+  --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#F1F3F6; --line:#E3E6EB; --line-strong:#CBD1D9; --charcoal:#2F3A48;
+  --fg:#1A2230; --muted:#5B6573; --faint:#8E97A4; --navy:#2F3A48; --navy-soft:#EBEEF2;
+  --accent:#D0312D; --accent-ink:#FFFFFF; --accent-soft:#FBE9E7;
+  --story:#B45309; --story-soft:#FDF1DF;
+  --test:#3D5A80; --test-soft:#E8EEF5;
+  --pass:#15803D; --pass-soft:#DCF5E4; --fail:#9F1239; --fail-soft:#FCE7EE; --warn:#A15C07; --warn-soft:#FDF0D5;
+  --shadow:0 1px 2px rgba(26,34,48,.05),0 10px 24px -14px rgba(26,34,48,.16);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:10px; --r-lg:16px; color-scheme:light;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.mono{font-family:var(--f-mono);font-size:.86em}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.icon{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:24px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:-.01em}
+.brand-mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.brand-mark svg{width:18px;height:18px}
+.nav{display:flex;gap:4px;margin-left:8px}
+.nav a{text-decoration:none;color:var(--muted);padding:6px 12px;border-radius:8px;font-weight:500;font-size:14px}
+.nav a:hover{background:var(--surface-2);color:var(--fg)}
+.nav a.on{color:var(--fg);background:var(--surface-2)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.proj{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--muted);background:var(--surface)}
+.proj b{color:var(--fg);font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--pass)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;font-size:13px}
+.theme-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.theme-btn:hover{color:var(--fg)}
+
+main{padding-block:40px 64px}
+.view{display:flex;flex-direction:column;gap:32px}
+.view[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){.view{animation:in .35s ease both}}
+@keyframes in{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* hero */
+.hero{display:flex;flex-direction:column;gap:12px;max-width:860px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.eyebrow .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.hero h1{font-size:clamp(30px,4.4vw,44px);line-height:1.08;font-weight:700}
+.hero p{color:var(--muted);font-size:17px;max-width:78ch;text-align:justify;hyphens:auto}
+
+/* start cards */
+.starts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.start{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;transition:border-color .2s, transform .2s}
+.start:hover{border-color:var(--line-strong)}
+.start-head{display:flex;flex-direction:column;gap:14px;padding:28px 28px 22px;text-align:left;background:none;border:0;cursor:pointer;width:100%}
+.start-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center}
+.start-icon .icon{width:22px;height:22px}
+.start.story .start-icon{background:var(--story-soft);color:var(--story)}
+.start.test .start-icon{background:var(--accent-soft);color:var(--accent)}
+.start-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.start h2{font-size:24px;font-weight:600}
+.start-desc{color:var(--muted);max-width:44ch}
+.chev{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);transition:transform .25s, background .2s, color .2s}
+.start-head:hover .chev{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.start.test.open .chev{transform:rotate(90deg);background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+.preview{margin:0 28px 28px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);padding:14px 16px;font-size:13px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.preview .lbl{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.preview .kw{color:var(--accent);font-weight:600}
+.preview code{font-family:var(--f-mono);font-size:12.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.preview .kw-g{color:var(--test);font-weight:600}
+
+/* sub-menu inside test card */
+.submenu{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease}
+.start.test.open .submenu{grid-template-rows:1fr}
+.submenu-inner{overflow:hidden;min-height:0}
+.start.test.open .preview{display:none}
+.sub-list{list-style:none;margin:0;padding:0 16px 16px;display:flex;flex-direction:column;gap:6px}
+.sub-list a{display:flex;align-items:center;gap:14px;padding:14px 12px;border-radius:12px;text-decoration:none;border:1px solid transparent}
+.sub-list a:hover{background:var(--surface-2);border-color:var(--line)}
+.sub-ic{width:38px;height:38px;border-radius:10px;background:var(--test-soft);color:var(--test);display:grid;place-items:center}
+.sub-txt{display:flex;flex-direction:column;min-width:0}
+.sub-txt b{font-weight:600}
+.sub-txt span{color:var(--muted);font-size:13.5px}
+.sub-list .arrow{margin-left:auto;color:var(--faint)}
+.sub-meta{margin-left:auto;font-size:12px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);padding:2px 8px;border-radius:99px;white-space:nowrap}
+.sub-divider{height:1px;background:var(--line);margin:0 28px 10px}
+.sub-cap{padding:0 28px 8px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600}
+
+.cta-ghost{margin:0 28px 28px;align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;text-decoration:none}
+.cta-ghost:hover{opacity:.9}
+
+/* test case hub */
+.hub{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.hub-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:26px;display:flex;flex-direction:column;gap:12px;text-decoration:none;transition:border-color .2s,transform .2s}
+.hub-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.hub-card:hover .chev{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.hub-card h2{font-size:21px;font-weight:600}
+.hub-card p{color:var(--muted);font-size:14.5px}
+.hub-ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.hub-foot{margin-top:auto;padding-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:900px){.hub{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.hub-card:hover{transform:none}}
+
+/* recent */
+.section-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.section-h h3{font-size:18px;font-weight:600}
+.section-h a{font-size:14px;color:var(--accent);text-decoration:none;font-weight:500}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);padding:12px 16px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr.sel td{background:var(--accent-soft)}
+.id{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.pass{color:var(--pass);background:var(--pass-soft)}
+.pill.fail{color:var(--fail);background:var(--fail-soft)}
+.pill.warn{color:var(--warn);background:var(--warn-soft)}
+.pill.draft{color:var(--muted);background:var(--surface-2)}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:6px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.tag.story{color:var(--story);background:var(--story-soft);border-color:transparent}
+.tag.test{color:var(--test);background:var(--test-soft);border-color:transparent}
+.muted{color:var(--muted)}
+.ex-note{font-size:12px;color:var(--faint)}
+
+/* sub-screens */
+.crumbs{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.view > .crumbs{margin-top:-20px;margin-bottom:-20px}
+.crumbs a{text-decoration:none;color:var(--muted)}
+.crumbs a:hover{color:var(--fg)}
+.crumbs .sep{color:var(--faint)}
+.crumbs b{color:var(--fg);font-weight:500}
+.screen-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.screen-h h1{font-size:clamp(26px,3.4vw,34px);font-weight:700}
+.screen-h p{color:var(--muted);margin-top:6px;max-width:60ch}
+.tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:4px;flex-wrap:wrap}
+.tabs a{text-decoration:none;padding:6px 12px;border-radius:7px;font-size:14px;font-weight:500;color:var(--muted)}
+.tabs a.on{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+
+.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.card h3{font-size:16px;font-weight:600}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.field .lab{font-size:13px;font-weight:600}
+.field .hint{font-size:12.5px;color:var(--muted)}
+input[type=text],select,textarea{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:9px;padding:10px 12px;font-size:14px}
+textarea{resize:vertical;min-height:110px;line-height:1.5}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;cursor:pointer;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden}
+.seg button{background:var(--surface);border:0;padding:9px;font-size:14px;cursor:pointer;color:var(--muted);font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:10px;border:1px solid transparent;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.line{background:var(--surface);border-color:var(--line-strong)}
+.btn.line:hover{background:var(--surface-2)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+.gen-h{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ai-status{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.ai-status .spark{color:var(--accent)}
+.tc{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tc-h{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface-2);flex-wrap:wrap}
+.tc-h b{font-weight:600;font-size:14.5px;flex:1 1 200px;min-width:0}
+.tc ol{margin:0;padding:12px 16px 12px 36px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.tc .exp{padding:0 16px 14px;font-size:13.5px;color:var(--muted)}
+.tc .exp b{color:var(--fg);font-weight:600}
+.prio{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:5px;letter-spacing:.03em}
+.prio.p1{background:var(--fail-soft);color:var(--fail)}
+.prio.p2{background:var(--warn-soft);color:var(--warn)}
+.prio.p3{background:var(--surface);color:var(--muted);border:1px solid var(--line)}
+.cov{display:flex;gap:6px;flex-wrap:wrap}
+
+/* modify */
+.toolbar{display:flex;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.search{position:relative;flex:1 1 220px}
+.search .icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint);width:17px;height:17px}
+.search input{padding-left:36px}
+.edit-steps{display:flex;flex-direction:column;gap:8px}
+.step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:start}
+.step .n{font-family:var(--f-mono);font-size:12px;color:var(--faint);padding-top:11px;text-align:right}
+.suggest{border:1px dashed var(--accent);background:var(--accent-soft);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.suggest-h{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--accent)}
+.suggest ins{text-decoration:none;background:var(--pass-soft);color:var(--pass);padding:0 3px;border-radius:3px}
+.ask{display:flex;gap:8px}
+.ask input{flex:1;min-width:0}
+
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.kpi .k{font-size:13px;color:var(--muted);font-weight:500}
+.kpi .v{font-family:var(--f-display);font-size:32px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .d{font-size:12.5px;font-weight:600}
+.up{color:var(--pass)} .down{color:var(--fail)}
+.dash-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:start}
+.chart{display:flex;flex-direction:column;gap:10px}
+.bars{display:grid;grid-template-columns:36px repeat(8,minmax(0,1fr));gap:10px;align-items:end;height:200px;position:relative}
+.axis{display:flex;flex-direction:column;justify-content:space-between;height:100%;font-size:11px;color:var(--faint);text-align:right;font-variant-numeric:tabular-nums}
+.bar{display:flex;flex-direction:column-reverse;height:100%;border-radius:6px 6px 0 0;overflow:hidden;position:relative;z-index:1}
+.bar span{display:block}
+.bar .p{background:var(--test)}
+.bar .f{background:var(--fail)}
+.bar .b{background:var(--warn)}
+.gridlines{position:absolute;left:46px;right:0;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
+.gridlines i{border-top:1px dashed var(--line)}
+.xlab{display:grid;grid-template-columns:36px repeat(8,minmax(0,1fr));gap:10px;font-size:11px;color:var(--faint);text-align:center}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.cov-list{display:flex;flex-direction:column;gap:14px}
+.cov-row{display:flex;flex-direction:column;gap:6px}
+.cov-row .t{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.cov-row .t span:last-child{font-variant-numeric:tabular-nums;color:var(--muted)}
+.meter{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px;background:var(--test)}
+.meter i.low{background:var(--warn)}
+
+/* user story */
+.story-out{display:flex;flex-direction:column;gap:14px}
+.story-card{border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.story-card .as{font-size:16px;line-height:1.6}
+.story-card .as b{color:var(--story)}
+.ac{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.ac li::marker{color:var(--faint)}
+.gwt{font-family:var(--f-mono);font-size:12.5px;background:var(--surface-2);border-radius:8px;padding:10px 12px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.gwt .kw-g{color:var(--test);font-weight:600}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;z-index:20;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+@media (max-width:900px){
+  .split,.dash-grid{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:720px){
+  .starts{grid-template-columns:minmax(0,1fr)}
+  .nav{display:none}
+  main{padding-block:28px 48px}
+  .start-head{padding:22px 20px 18px}
+  .preview{margin:0 20px 20px}
+  .sub-list{padding:0 8px 12px}
+  .sub-divider{margin:0 20px 10px}.sub-cap{padding:0 20px 8px}
+  .cta-ghost{margin:0 20px 20px}
+  .hide-sm{display:none}
+  .bars,.xlab{gap:6px}
+}
+
+.start-title{display:flex;align-items:center;gap:14px;min-width:0}
+/* workflow stepper */
+.stepper{display:flex;align-items:center;gap:12px;padding:0;align-self:flex-start;max-width:100%}
+.stepper .step{display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:0;padding:2px;cursor:pointer;flex:none;width:auto;flex-direction:row !important;text-align:center}
+.stepper .num{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums;border:2px solid var(--line-strong);color:var(--muted);background:var(--surface);transition:background .25s,border-color .25s,color .25s}
+.stepper .sn{line-height:1}
+.stepper .num .ck{display:none;width:13px;height:13px;stroke-width:3}
+.stepper .st{display:flex;flex-direction:column;gap:2px}
+.stepper .st small{display:none}
+.stepper .st b{font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.stepper .link{flex:0 1 48px;min-width:16px;height:2px;border-radius:2px;background:var(--line-strong);margin:0;transition:background .3s}
+.stepper .link.done{background:var(--pass)}
+.stepper .step[aria-current="step"] .num{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 0 0 3px var(--accent-soft)}
+.stepper .step[aria-current="step"] small{color:var(--accent)}
+.stepper .step[aria-current="step"] b{color:var(--fg)}
+.stepper .step.done .num{background:var(--pass);border-color:var(--pass);color:#fff}
+.stepper .step.done .sn{display:none}
+.stepper .step.done .ck{display:block}
+.stepper .step.done small{color:var(--pass)}
+.stepper .step.done b{color:var(--fg)}
+.stepper .step:focus-visible{outline-offset:4px}
+@media (max-width:640px){.stepper{gap:8px}.stepper .st b{font-size:12.5px}}
+[hidden]{display:none!important}
+.wf{width:100%;display:flex;flex-direction:column;gap:20px}
+.result-h{display:flex;gap:14px;align-items:center}
+.result-h .ok{width:44px;height:44px;border-radius:12px;background:var(--pass-soft);color:var(--pass);display:grid;place-items:center;flex:none}
+.result-h h3{font-size:19px}
+.kpis.small{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.kpis.small .kpi{padding:14px 16px}
+.kpis.small .v{font-size:24px}
+@media (max-width:520px){.stepper{gap:6px;padding:12px}.stepper button{font-size:13px;gap:6px}.kpis.small{grid-template-columns:minmax(0,1fr)}}
+/* v7: brighter theme */
+
+.top{background:var(--accent);border-bottom:0}
+.top .brand{color:#fff}
+.top .brand-mark{background:#fff;color:var(--accent)}
+.top .proj{background:transparent;border-color:rgba(255,255,255,.6);color:#fff}
+.top .proj b{color:#fff}
+.top .proj .dot{background:#fff}
+body::before{background:var(--accent)}
+main{position:relative}
+#v-home .hero{position:relative}
+#v-home{position:relative;isolation:isolate}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.primary{box-shadow:0 6px 16px -8px var(--accent)}
+.eyebrow{color:var(--accent)}
+/* v8: create test cases form (from Baha's screen) */
+.back{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--accent);text-decoration:none;align-self:flex-start}
+.back .icon{width:16px;height:16px;transform:rotate(180deg)}
+.back:hover{text-decoration:underline}
+.wf-step{display:flex;flex-direction:column;gap:20px}
+.step-h{display:flex;flex-direction:column;gap:8px}
+.step-h h1{font-size:clamp(24px,3vw,30px);font-weight:700;display:flex;align-items:center;gap:12px}
+.step-h .bar{width:4px;height:1.1em;border-radius:2px;background:var(--accent)}
+.step-h p{color:var(--muted);max-width:72ch;padding-left:16px}
+.guard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.guard-h{display:flex;align-items:center;gap:8px}
+.guard-h b{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.guard-h small{display:none}
+.g-badge{width:20px;height:20px;border-radius:6px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.g-badge .icon{width:13px;height:13px}
+.guard ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 16px}
+.guard li{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--muted);line-height:1.4}
+.guard li b{display:block;color:var(--fg);font-size:12.5px;font-weight:600}
+.g-ic{width:22px;height:22px;border-radius:6px;background:var(--navy-soft);color:var(--navy);display:grid;place-items:center;flex:none}
+.g-ic .icon{width:12px;height:12px}
+@media (max-width:1000px){.guard ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tc-form{border-top:3px solid var(--accent);padding:0;gap:0}
+.tc-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:0}
+.tc-grid .col{padding:22px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.tc-grid .col+.col{border-left:1px solid var(--line)}
+.field .opt{font-weight:400;color:var(--muted)}
+.policy{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.policy-h{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.policy-h .icon{width:15px;height:15px}
+.policy-row{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.policy-row code{font-family:var(--f-mono);font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+.tc-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 22px;border-top:1px solid var(--line);background:var(--surface-2);border-radius:0 0 var(--r-lg) var(--r-lg);font-size:13.5px}
+@media (max-width:760px){.tc-grid{grid-template-columns:minmax(0,1fr)}.tc-grid .col+.col{border-left:0;border-top:1px solid var(--line)}.guard ul{grid-template-columns:minmax(0,1fr)}}
+/* v9: bank-style theme — red welcome band */
+.tc-form{border-top-color:var(--accent)}
+.start,.hub-card,.card,.panel,.kpi,.guard{border-color:transparent;box-shadow:var(--shadow)}
+.start{border-top:4px solid var(--accent)}
+.start.test{border-top-color:var(--charcoal)}
+/* v6: workspace cards (from Baha's screen) */
+.start{border-top:4px solid var(--accent)}
+.start.test{border-top-color:var(--navy)}
+.start.test .start-icon{background:var(--navy-soft);color:var(--navy)}
+.start.story .start-icon{background:var(--accent-soft);color:var(--accent)}
+.start-opts{list-style:none;margin:0 28px 28px;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--muted)}
+.start-opts li{display:flex;align-items:center;gap:10px}
+.start-opts .icon{width:16px;height:16px;color:var(--faint)}
+.start-foot{margin:auto 28px 26px;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--accent)}
+.start.test .start-foot{color:var(--navy)}
+.hub.test .hub-ic{background:var(--navy-soft);color:var(--navy)}
+.hub.test .hub-card:hover{border-color:var(--navy)}
+.hub.test .hub-card:hover .chev{background:var(--navy);color:#fff;border-color:var(--navy)}
+.hero .sub{font-size:15px;color:var(--fg);font-weight:500}
+.foot{margin-top:8px;text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--faint);letter-spacing:.01em}
+.jira{font-family:var(--f-mono);font-size:12.5px;color:var(--accent);font-weight:500;white-space:nowrap}
+.pill.jira-in{color:var(--pass);background:var(--pass-soft)}
+.pill.review{color:var(--warn);background:var(--warn-soft)}
+.pill.update{color:var(--fail);background:var(--fail-soft)}
+.pre{font-size:13.5px;color:var(--muted);padding:12px 16px 0}
+.pre b{color:var(--fg);font-weight:600}
+.ac-tag{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.docs{display:flex;flex-direction:column;gap:6px}
+.doc{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--surface-2)}
+.doc .icon{width:16px;height:16px;color:var(--muted)}
+.doc span:last-child{margin-left:auto;color:var(--faint);font-size:12px}
+.bars.b6,.xlab.b6{grid-template-columns:36px repeat(8,minmax(0,1fr))}
+.bar .m{background:var(--navy)}
+.bar .g{background:var(--accent)}
+.btn.sm{padding:7px 14px;font-size:13px;border-radius:8px}
+.mt-panel{box-shadow:var(--shadow)}
+.mt-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:var(--accent-soft);border-bottom:1px solid #F3D3CF}
+.mt-head b{font-size:14px;font-weight:700;color:var(--accent)}
+.mt-head .icon{transform:rotate(180deg)}
+.mt-list{list-style:none;margin:0;padding:0}
+.mt-cols,.mt-row{display:grid;grid-template-columns:28px minmax(0,1fr) 150px 170px 170px;align-items:center;gap:16px;padding:14px 18px}
+.mt-row{border-top:1px solid var(--line)}
+.mt-cols{padding-block:9px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.mt-fmt{font-size:14px;color:var(--fg)}
+.mt-act{justify-content:flex-end}
+.mt-row:first-child{border-top:0}
+.mt-row:hover{background:#FBFBFC}
+.mt-n{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--faint);width:28px;flex:none}
+.mt-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.mt-keys{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.mt-keys span{font-weight:500;color:var(--muted)}
+.mt-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:13px;color:var(--muted)}
+.mt-st{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.mt-st.ok{background:var(--pass-soft);border-color:transparent;color:var(--pass);font-weight:600}
+.mt-epic{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+.mt-from{white-space:nowrap;font-family:"IBM Plex Sans",sans-serif;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:5px}
+.mt-act{display:flex;gap:8px;flex:none}
+@media (max-width:760px){.mt-cols{display:none}.mt-row{grid-template-columns:auto minmax(0,1fr);gap:8px 12px}.mt-fmt,.mt-stc,.mt-act{grid-column:2}.mt-fmt::before,.mt-stc::before{content:attr(data-l) ": ";color:var(--faint);font-size:12px}.mt-act .btn{flex:1}}
+.icon.up{transform:rotate(180deg)}
+.rv-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rv-panel{box-shadow:var(--shadow)}
+.rv-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:var(--accent-soft);border-bottom:1px solid #F3D3CF}
+.rv-head b{font-size:14px;font-weight:700;color:var(--accent)}
+.rv-main .rv-story{font:600 12.5px var(--f-mono);color:var(--accent);padding:7px 22px 7px 8px;min-width:0}
+table.rtm tr.rtm-grp td{background:var(--surface-2);padding:9px 18px;border-top:1px solid var(--line)}
+table.rtm tr.rtm-grp td{display:table-cell}
+.rtm-grp td>*{vertical-align:middle}
+.rtm-grp b{font-weight:600;margin:0 12px 0 10px;font-size:14px}
+.rtm-gc{font-size:12px;font-weight:700;color:var(--pass);float:right}
+.rtm-gc.gap{color:var(--warn)}
+.rtm-story{font-size:13px;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.rtm-sum{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.rtm-stats{display:flex;gap:16px;font-size:13.5px;color:var(--muted)}
+.rtm-stats b{color:var(--fg);font-weight:700}
+.rtm-pct b{color:var(--pass)}
+.rtm-bar{flex:1 1 160px;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.rtm-bar i{display:block;height:100%;background:var(--pass);border-radius:99px;transition:width .3s}
+.rtm-bar i.gap{background:var(--warn)}
+table.rtm{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+table.rtm th{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;background:var(--surface)}
+table.rtm td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.rtm tbody tr:last-child td{border-bottom:0}
+table.rtm tbody tr:hover td{background:#FBFBFC}
+table.rtm tr.uncov td{background:#FFF8F7}
+.rtm-c-ac{width:46%;padding-left:18px!important}
+table.rtm td{vertical-align:top}
+table.rtm tr[data-sub] td{border-top:1px dashed var(--line)}
+table.rtm tbody tr td{border-bottom:0}
+table.rtm tbody tr:not([data-sub]) td{border-top:1px solid var(--line)}
+table.rtm tbody tr:first-child td{border-top:0}
+table.rtm td.rtm-c-tests,table.rtm td.rtm-c-ty{padding-top:10px;padding-bottom:10px}
+.rtm-c-ty{width:110px}
+table.rtm tbody tr:hover td{background:transparent}
+.rtm-tests{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.rtm-tests .rtm-lg{padding:2px 0;width:100%}
+.rtm-none{color:var(--fail);font-size:13px;font-weight:600}
+.rtm-c-tc,.rtm-cell{text-align:center!important;width:64px}
+.rtm-c-cov{text-align:right!important;padding-right:18px!important;width:110px}
+.rtm-tch{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:4px 8px;font:600 12px var(--f-mono);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:5px;letter-spacing:0}
+.rtm-tch:hover{border-color:var(--accent);color:var(--accent)}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.tdot.positive{background:var(--pass)}.tdot.negative{background:var(--fail)}.tdot.edge{background:var(--warn)}
+.rtm-acw{display:flex;gap:12px;align-items:flex-start}
+.rtm-ac{font:700 12px var(--f-mono);color:var(--accent);background:var(--accent-soft);padding:3px 7px;border-radius:6px;flex:none;margin-top:1px}
+.rtm-crit{margin:0;line-height:1.5;color:var(--fg);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.rtm-crit.open{display:block}
+.rtm-crit i{font-style:normal;font-weight:700}
+.rtm-hit{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent)}
+.rtm-hit svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.rtm-miss{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--line-strong)}
+.rtm-n{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.rtm-n.ok{color:var(--pass);background:var(--pass-soft)}
+.rtm-n.no{color:var(--fail);background:var(--fail-soft)}
+.rtm-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;padding:12px 18px;border-top:1px solid var(--line);background:var(--surface-2)}
+.rtm-lg{display:flex;align-items:baseline;gap:8px;background:none;border:0;padding:4px 0;text-align:left;font-size:13px;color:var(--muted);cursor:pointer;min-width:0}
+.rtm-lg b{font:700 12px var(--f-mono);color:var(--fg);flex:none}
+.rtm-lg span:nth-child(2){min-width:0;color:var(--fg);line-height:1.45}
+.rtm-lg:hover span:nth-child(2){color:var(--accent)}
+.rtm-lg .ty{margin-left:0;flex:none}
+@keyframes flash{from{box-shadow:inset 0 0 0 2px var(--accent)}to{box-shadow:inset 0 0 0 2px transparent}}
+.rv-row.flash{animation:flash 1.6s ease-out}
+@media (max-width:640px){.rtm-legend{grid-template-columns:1fr}.rtm-stats{gap:12px}}
+.rv-cov{font-size:12px;font-weight:700;color:var(--pass);background:var(--pass-soft);padding:4px 11px;border-radius:99px;white-space:nowrap}
+.rv-cov.gap{background:var(--warn-soft);color:var(--warn)}
+.rv-seg{width:200px;background:var(--surface)}
+.rv-seg button{padding:6px}
+.ty{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:5px;margin-left:4px;white-space:nowrap}
+.ty.positive{color:var(--pass);background:var(--pass-soft)}
+.ty.negative{color:var(--fail);background:var(--fail-soft)}
+.ty.edge{color:var(--warn);background:var(--warn-soft)}
+.rv-filter{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.rv-filter label{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.rv-filter select{flex:1;max-width:none}
+.rv-cols,.rv-main{display:grid;grid-template-columns:28px 136px 140px 104px 116px minmax(0,1fr) 28px;gap:10px;align-items:center}
+.rv-cols{padding:10px 18px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.rv-row{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.rv-row[hidden]{display:none!important}
+.rv-main select{padding:7px 28px 7px 9px;font-size:13.5px;min-width:0}
+.rv-acin{font:600 13px var(--f-mono);color:var(--accent);padding:8px 10px;min-width:0}
+.rv-acin.bad{border-color:var(--warn);background:var(--warn-soft)}
+.rv-ac{font-family:var(--f-mono);font-size:12.5px;font-weight:600;padding:6px 0;flex:1;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+.rv-ac[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.rv-ac:hover{border-color:var(--accent)}
+.rv-n{font-family:var(--f-mono);font-size:13px;color:var(--faint)}
+.rv-main .rv-title{font-weight:600;font-size:14.5px;padding:6px 8px;min-width:0;border:1px solid transparent;background:transparent;box-shadow:none;border-radius:6px}
+.rv-main .rv-title:hover{background:var(--surface-2)}
+.rv-main .rv-title:focus{background:var(--surface);border-color:var(--accent);outline:none}
+.rv-x{border:0;background:none;font-size:20px;line-height:1;color:var(--faint);cursor:pointer;border-radius:6px;width:28px;height:28px}
+.rv-x:hover{background:var(--fail-soft);color:var(--fail)}
+.rv-desc{margin-left:38px;background:var(--surface-2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.rv-dl{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+table.rv-steps{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+table.rv-steps th{text-align:left;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:8px 10px}
+table.rv-steps td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top;line-height:1.5}
+table.rv-steps td+td,table.rv-steps th+th{border-left:1px solid var(--line)}
+table.rv-steps .num,table.rv-steps th:first-child{width:52px;text-align:center}
+table.rv-steps td[contenteditable]:focus{outline:2px solid var(--accent);outline-offset:-2px;background:#FFFDFD}
+.rv-add{padding:12px 18px}
+.pv{padding:18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.pv:last-child{border-bottom:0}
+.pv h4{font-size:15.5px;font-weight:700;display:flex;gap:10px;align-items:baseline}
+.pv-meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--muted)}
+.pv-meta b{color:var(--fg);font-weight:600}
+.pv-meta span:first-child{font-family:var(--f-mono);color:var(--accent)}
+.rv-bar{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;position:sticky;bottom:12px;z-index:5}
+.rv-bar>p{color:var(--muted);font-size:14px;flex:1 1 300px}
+.rv-confirm{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;border-top:1px solid var(--line)}
+.rv-confirm p{font-weight:600;font-size:14px;flex:1 1 300px}
+@media (max-width:900px){
+ .rv-cols{display:none}
+ .rv-main{grid-template-columns:repeat(3,minmax(0,1fr));}
+ .rv-main .rv-n{grid-column:1}.rv-main .rv-story{grid-column:2/4;justify-self:start}
+ .rv-main .rv-title{grid-column:1/-1;order:5}
+ .rv-main .rv-acin{grid-column:1/-1}
+ .rv-main .rv-x{position:absolute;right:12px;top:10px}
+ .rv-main select{padding:7px 20px 7px 8px;font-size:13px;background-position:right 6px center}
+ .rv-row{position:relative}
+ .rv-desc{margin-left:0}
+ table.rtm{min-width:640px}
+ .rtm-c-ac{width:auto;min-width:240px}
+ table.rv-steps{min-width:560px}
+ .rv-bar{position:static}
+}
+.kpis.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpis.five .kpi .k{min-height:3.2em}
+.chg{align-self:flex-start;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chg.up{color:var(--pass);background:var(--pass-soft)}
+.chg.down{color:var(--fail);background:var(--fail-soft)}
+.kpi .sub{font-size:12.5px;color:var(--muted)}
+.dash-two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.hbars{display:flex;flex-direction:column;gap:14px}
+.hb{display:grid;grid-template-columns:150px minmax(0,1fr) 48px;align-items:center;gap:14px;font-size:14px}
+.hb-l{color:var(--muted)}
+.hb b{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.hb .meter{height:10px}
+.hb .meter i{background:var(--accent)}
+.chart-ctl{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.chart-seg{width:170px}.chart-seg button{padding:6px}
+.vchart{display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-rows:200px auto;column-gap:10px;row-gap:8px}
+.vc-axis{display:flex;flex-direction:column;justify-content:space-between;font-size:11px;color:var(--faint);text-align:right;margin:-6px 0}
+.vc-plot{position:relative;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px;align-items:end;border-bottom:1px solid var(--line-strong)}
+.vc-grid{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
+.vc-grid i{border-top:1px dashed var(--line);display:block}
+.vc-col{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.vc-stack{width:min(100%,40px);display:flex;flex:none;flex-direction:column-reverse;justify-content:flex-start}
+.vc-stack span{display:block;width:100%}
+.vc-stack span.s0{background:var(--accent);border-radius:0 0 3px 3px}
+.vc-stack span.s1{background:#E9A19E}
+.vc-stack span:last-child{border-radius:5px 5px 0 0}
+.vc-stack span:only-child{border-radius:5px 5px 0 0}
+.vc-stack span.zero{height:100%;background:var(--line-strong);border-radius:2px}
+.vc-col em{font-style:normal;font-size:11.5px;font-weight:600;color:var(--fg);margin-bottom:4px}
+.vc-x{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px;font-size:11px;color:var(--faint);text-align:center}
+.vc-x span{white-space:nowrap;overflow:hidden;text-overflow:clip}
+@media (max-width:900px){.kpis.five{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-two{grid-template-columns:1fr}.hb{grid-template-columns:110px minmax(0,1fr) 40px}}
+.vchart#vchartD .vc-x span:nth-child(odd){visibility:hidden}.vchart#vchartD .vc-col em{font-size:10.5px}
+@media (max-width:520px){.vc-x span:nth-child(even){visibility:hidden}.vc-col em{display:none}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-story" viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4"/><path d="M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-test" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#home"><span class="brand-mark"><svg class="icon"><use href="#i-shield"/></svg></span>Quality Guard AI</a>
+    <span class="proj" style="margin-left:auto"><span class="dot"></span><b>Built for BNE</b></span>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- HOME -->
+<section class="view" id="v-home">
+  <div class="hero">
+    <span class="eyebrow"><span class="pulse"></span>BNE · National Bank of Canada</span>
+    <h1>Welcome to Quality Guard AI</h1>
+    <p>Turn requirements into delivery-ready assets in minutes. Quality Guard AI analyzes your Jira epics, stories and linked documents to generate high-quality user stories, acceptance criteria and test cases, reducing manual effort and accelerating delivery.</p>
+  </div>
+
+  <div class="starts">
+    <article class="start story">
+      <a class="start-head" href="#user-stories" style="text-decoration:none">
+        <span class="start-row">
+          <span class="start-title"><span class="start-icon"><svg class="icon"><use href="#i-story"/></svg></span><h2>User Story</h2></span>
+          
+        </span>
+        <p class="start-desc">Transform epics and business requirements into clear, testable user stories with AI-generated acceptance criteria, ready for backlog refinement and Jira creation.</p>
+      </a>
+      <div class="preview" aria-hidden="true">
+        <span class="lbl"><span>Example output</span><span class="mono">BNE-2311</span></span>
+        <code><span class="kw">As a</span> personal banking client, <span class="kw">I want</span> to register my email for Interac e-Transfer Autodeposit <span class="kw">so that</span> money sent to me goes straight into my chequing account.</code>
+      </div>
+    </article>
+
+    <article class="start test">
+      <a class="start-head" href="#test-cases" style="text-decoration:none">
+        <span class="start-row">
+          <span class="start-title"><span class="start-icon"><svg class="icon"><use href="#i-test"/></svg></span><h2>Test Case</h2></span>
+          
+        </span>
+        <p class="start-desc">Generate complete, requirement-driven test cases with preconditions, steps, expected results and Gherkin scenarios to improve coverage and maintain traceability.</p>
+      </a>
+      <div class="preview" aria-hidden="true">
+        <span class="lbl"><span>Example output</span><span class="mono">TC-0142 → BNE-2311</span></span>
+        <code><span class="kw-g">Given</span> the email is already registered for Autodeposit at another bank
+<span class="kw-g">When</span> the client tries to register it
+<span class="kw-g">Then</span> registration is refused and the client sees how to transfer it</code>
+      </div>
+    </article>
+  </div>
+
+  <p class="foot">Built for BNE · National Bank of Canada · uses your Copilot license</p>
+</section>
+
+<!-- USER STORY HUB -->
+<section class="view" id="v-user-stories" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><b>User stories</b></nav>
+  <div class="screen-h"><div><h1>User Story</h1><p>Transform epics and business requirements into clear, testable user stories, ready for backlog refinement and Jira creation.</p></div></div>
+  <div class="hub">
+    <a class="hub-card" href="#us-create">
+      <span class="start-row"><span class="hub-ic"><svg class="icon"><use href="#i-plus"/></svg></span></span>
+      <h2>Create User Story</h2>
+      <p>Point the AI at an epic. It reads the epic and its linked documents and drafts user stories for your review. Then create them in Jira or download them as Excel.</p>
+    </a>
+    <a class="hub-card" href="#us-modify">
+      <span class="start-row"><span class="hub-ic"><svg class="icon"><use href="#i-edit"/></svg></span></span>
+      <h2>Modify User Story</h2>
+      <p>Browse the user stories you generated, reopen a set to refine it, then create it in Jira or download it as Excel.</p>
+    </a>
+    <a class="hub-card" href="#us-dashboard">
+      <span class="start-row"><span class="hub-ic"><svg class="icon"><use href="#i-grid"/></svg></span></span>
+      <h2>User Story Dashboard</h2>
+      <p>Track how many stories you drafted, which are already in Jira, and coverage by epic and priority.</p>
+    </a>
+  </div>
+</section>
+
+<!-- TEST CASE HUB -->
+<section class="view" id="v-test-cases" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><b>Test cases</b></nav>
+  <div class="screen-h"><div><h1>Test Case</h1><p>Generate complete, requirement-driven test cases with preconditions, steps, expected results and Gherkin scenarios to improve coverage and maintain traceability.</p></div></div>
+  <div class="hub test">
+    <a class="hub-card" href="#tc-create">
+      <span class="start-row"><span class="hub-ic"><svg class="icon"><use href="#i-plus"/></svg></span></span>
+      <h2>Create Test Case</h2>
+      <p>Pick a Jira story or epic and the AI generates complete, structured test cases (manual steps or Gherkin) covering every acceptance criterion.</p>
+    </a>
+    <a class="hub-card" href="#tc-modify">
+      <span class="start-row"><span class="hub-ic"><svg class="icon"><use href="#i-edit"/></svg></span></span>
+      <h2>Modify Test Case</h2>
+      <p>Select an existing test case and refine it: update steps, requirements or expected results.</p>
+    </a>
+    <a class="hub-card" href="#tc-dashboard">
+      <span class="start-row"><span class="hub-ic"><svg class="icon"><use href="#i-chart"/></svg></span></span>
+      <h2>Test Case Dashboard</h2>
+      <p>Track coverage, test case volume and quality trends across your stories at a glance.</p>
+    </a>
+  </div>
+</section>
+
+<!-- US CREATE -->
+<section class="view" id="v-us-create" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><a href="#user-stories">User stories</a><span class="sep">/</span><b>Create</b></nav>
+  <div class="screen-h"><div><h1>Create User Story</h1><p>Point the AI at an epic. It reads the epic and its linked documents and drafts stories for your review.</p></div></div>
+  <div class="split">
+    <form class="card" id="storyForm">
+      <div class="field"><label for="s-epic">Jira epic</label>
+        <input type="text" id="s-epic" value="BNE-2207 · Interac e-Transfer Autodeposit">
+        <span class="hint">Paste an epic key or link.</span></div>
+      <div class="field"><span class="lab">Linked documents found</span>
+        <div class="docs">
+          <div class="doc"><svg class="icon"><use href="#i-link"/></svg>Autodeposit business requirements v3<span>Confluence</span></div>
+          <div class="doc"><svg class="icon"><use href="#i-link"/></svg>Interac e-Transfer rules summary<span>PDF</span></div>
+        </div></div>
+      <div class="field"><span class="lab">Include</span>
+        <div class="chips"><button type="button" class="chip" aria-pressed="true">Acceptance criteria</button><button type="button" class="chip" aria-pressed="true">Gherkin scenarios</button><button type="button" class="chip" aria-pressed="false">Story points</button></div></div>
+      <div class="btn-row"><button class="btn primary" type="submit"><svg class="icon"><use href="#i-spark"/></svg>Generate user stories</button></div>
+    </form>
+    <div class="card">
+      <div class="gen-h"><h3>2 draft stories from BNE-2207</h3><span class="ai-status"><svg class="icon spark"><use href="#i-spark"/></svg>Example output</span></div>
+      <div class="story-out">
+        <div class="story-card">
+          <span class="id">Story 1 of 2 · Priority High</span>
+          <p class="as"><b>As a</b> personal banking client, <b>I want</b> to register my email for Interac e-Transfer Autodeposit <b>so that</b> money sent to me goes straight into my chequing account.</p>
+          <div class="field"><span class="lab">Acceptance criteria</span>
+          <ol class="ac"><li>The client confirms the email with a one-time code.</li><li>The client picks which account receives deposits.</li><li>An email already registered at another bank is refused, with steps to transfer it.</li><li>A confirmation is shown and sent by email.</li></ol></div>
+        </div>
+        <div class="story-card">
+          <span class="id">Story 2 of 2 · Priority Medium</span>
+          <p class="as"><b>As a</b> personal banking client, <b>I want</b> to see and remove my Autodeposit email <b>so that</b> I can stop automatic deposits when I change email.</p>
+        </div>
+        <div class="btn-row"><button class="btn primary" type="button" data-toast="2 stories created in Jira under BNE-2207">Create in Jira</button><button class="btn line" type="button" data-toast="Excel file ready to download"><svg class="icon"><use href="#i-down"/></svg>Download as Excel</button><a class="btn line" href="#tc-create">Create test cases</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- US MODIFY -->
+<section class="view" id="v-us-modify" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><a href="#user-stories">User stories</a><span class="sep">/</span><b>Modify</b></nav>
+  <div class="screen-h"><div><h1>Modify User Story</h1><p>Reopen a set of stories you generated, refine it, then create it in Jira or download it as Excel.</p></div></div>
+  <div class="split" style="grid-template-columns:minmax(0,6fr) minmax(0,6fr)">
+    <div class="panel">
+      <div class="toolbar"><div class="search"><svg class="icon"><use href="#i-search"/></svg><input type="text" id="usSearch" placeholder="Search stories or epics" aria-label="Search stories"></div></div>
+      <div class="table-wrap">
+      <table class="pick" id="usTable">
+        <thead><tr><th>Epic</th><th>Story</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td class="jira">BNE-2207</td><td>Register email for e-Transfer Autodeposit</td><td><span class="pill jira-in">In Jira</span></td></tr>
+          <tr><td class="jira">BNE-2207</td><td>Cancel an e-Transfer that hasn't been deposited</td><td><span class="pill review">In review</span></td></tr>
+          <tr><td class="jira">BNE-2184</td><td>Show mobile cheque deposit hold period</td><td><span class="pill review">In review</span></td></tr>
+          <tr><td class="jira">BNE-2160</td><td>Lock a lost debit card from the app</td><td><span class="pill jira-in">In Jira</span></td></tr>
+          <tr><td class="jira">BNE-2160</td><td>Order a replacement debit card</td><td><span class="pill draft">Draft</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="gen-h"><div><span class="jira">BNE-2311</span><h3 class="ed-title" style="margin-top:2px">Register email for e-Transfer Autodeposit</h3></div><span class="pill jira-in">In Jira</span></div>
+      <div class="field"><label for="us-story">Story</label><textarea id="us-story" style="min-height:90px">As a personal banking client, I want to register my email for Interac e-Transfer Autodeposit so that money sent to me goes straight into my chequing account.</textarea></div>
+      <div class="field"><label for="us-ac">Acceptance criteria</label><textarea id="us-ac">1. The client confirms the email with a one-time code.
+2. The client picks which account receives deposits.
+3. An email already registered at another bank is refused, with steps to transfer it.
+4. A confirmation is shown and sent by email.</textarea></div>
+      <div class="field"><label for="usAsk">Ask AI to refine</label>
+        <div class="ask"><input type="text" id="usAsk" placeholder="e.g. Add a criterion for business accounts"><button class="btn line" type="button" data-toast="Refining BNE-2311…">Refine</button></div></div>
+      <div class="btn-row"><button class="btn primary" type="button" data-toast="BNE-2311 updated in Jira">Update in Jira</button><button class="btn line" type="button" data-toast="Excel file ready to download"><svg class="icon"><use href="#i-down"/></svg>Download as Excel</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- US DASHBOARD -->
+<section class="view" id="v-us-dashboard" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><a href="#user-stories">User stories</a><span class="sep">/</span><b>Dashboard</b></nav>
+  <div class="screen-h"><div><h1>User Story Dashboard</h1><p>BNE Project · <span class="ex-note">sample data</span></p></div></div>
+  <div class="kpis">
+    <div class="kpi"><span class="k">Stories drafted</span><span class="v">132</span><span class="d up">+14 this week</span></div>
+    <div class="kpi"><span class="k">Already in Jira</span><span class="v">97</span><span class="d muted">73% of drafted</span></div>
+    <div class="kpi"><span class="k">In review</span><span class="v">35</span><span class="d muted">Waiting for refinement</span></div>
+    <div class="kpi"><span class="k">Epics covered</span><span class="v">14 / 17</span><span class="d down">3 epics without stories</span></div>
+  </div>
+  <div class="dash-grid">
+    <div class="card">
+      <h3>Coverage by epic</h3>
+      <div class="cov-list">
+        <div class="cov-row"><div class="t"><span><span class="jira">BNE-2207</span> e-Transfer Autodeposit</span><span>100%</span></div><div class="meter"><i style="width:100%"></i></div></div>
+        <div class="cov-row"><div class="t"><span><span class="jira">BNE-2160</span> Debit card controls</span><span>86%</span></div><div class="meter"><i style="width:86%"></i></div></div>
+        <div class="cov-row"><div class="t"><span><span class="jira">BNE-2184</span> Mobile cheque deposit</span><span>71%</span></div><div class="meter"><i style="width:71%"></i></div></div>
+        <div class="cov-row"><div class="t"><span><span class="jira">BNE-2142</span> Bill payments</span><span>48%</span></div><div class="meter"><i class="low" style="width:48%"></i></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Stories by priority</h3>
+      <div class="cov-list">
+        <div class="cov-row"><div class="t"><span>High</span><span>38</span></div><div class="meter"><i style="width:29%;background:var(--accent)"></i></div></div>
+        <div class="cov-row"><div class="t"><span>Medium</span><span>61</span></div><div class="meter"><i style="width:46%;background:var(--fg)"></i></div></div>
+        <div class="cov-row"><div class="t"><span>Low</span><span>33</span></div><div class="meter"><i style="width:25%;background:var(--faint)"></i></div></div>
+      </div>
+      <a class="btn line" href="#us-create" style="align-self:flex-start"><svg class="icon"><use href="#i-spark"/></svg>Draft stories for BNE-2142</a>
+    </div>
+  </div>
+</section>
+
+<!-- TC CREATE -->
+<section class="view" id="v-tc-create" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><a href="#test-cases">Test cases</a><span class="sep">/</span><b>Create</b></nav>
+  <div class="stepper" id="tcSteps" aria-label="Workflow">
+    <button type="button" class="step" data-step-go="1" aria-current="step"><span class="num"><span class="sn">1</span><svg class="icon ck" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="st"><small>Step 1</small><b>Create</b></span></button>
+    <span class="link" aria-hidden="true"></span>
+    <button type="button" class="step" data-step-go="2"><span class="num"><span class="sn">2</span><svg class="icon ck" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="st"><small>Step 2</small><b>Review</b></span></button>
+    <span class="link" aria-hidden="true"></span>
+    <button type="button" class="step" data-step-go="3"><span class="num"><span class="sn">3</span><svg class="icon ck" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="st"><small>Step 3</small><b>Results</b></span></button>
+  </div>
+  <div class="wf">
+    <div class="wf-step" data-step="1">
+      <div class="step-h">
+        <h1><span class="bar" aria-hidden="true"></span>1 · Create Test Cases</h1>
+        <p>Provide the Jira story key(s) and pick a test format, add any ad hoc constraints, then generate a dry-run preview. Nothing is written to Jira here.</p>
+      </div>
+      <div class="guard">
+        <div class="guard-h"><span class="g-badge"><svg class="icon"><use href="#i-shield"/></svg></span><span><b>Built-in guardrails</b><small>Every run follows these rules automatically.</small></span></div>
+        <ul>
+          <li><span class="g-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><span><b>Grounded in Jira</b><span>Authored only from the story keys you provide.</span></span></li>
+          <li><span class="g-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M4 12h12M12 7l5 5-5 5"/><circle cx="20" cy="12" r="1"/></svg></span><span><b>Real user flows</b><span>Every test runs Login → Navigate → Act → Verify.</span></span></li>
+          <li><span class="g-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></span><span><b>Coverage floor</b><span>Enough tests are generated to cover the story.</span></span></li>
+          <li><span class="g-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span><span><b>Nothing invented</b><span>Stories without acceptance criteria are flagged, never made up.</span></span></li>
+        </ul>
+      </div>
+      <form class="card tc-form" id="tcForm">
+        <div class="tc-grid">
+          <div class="col">
+            <div class="field"><span class="lab" id="tc-by-l">Create Test Cases by</span>
+              <div class="seg" id="tc-by" role="group" aria-labelledby="tc-by-l"><button type="button" aria-pressed="true">User Story</button><button type="button" aria-pressed="false">Epic</button></div></div>
+            <div class="field"><label for="tc-src"><span id="tc-src-l">Jira User Story</span> <span class="opt">— comma-separated</span></label>
+              <input type="text" id="tc-src" placeholder="DBH-78237, DBH-75525, DBH-79840"></div>
+            <div class="field"><label for="tc-notes">Ad hoc condition <span class="opt">— optional</span></label>
+              <textarea id="tc-notes" style="min-height:90px" placeholder="Extra constraint or context to ground the tests, e.g. 'only migrated payees', 'ignore inactive accounts'"></textarea></div>
+            <div class="field"><label for="tc-copy">Test case ID <span class="opt">— optional</span></label>
+              <input type="text" id="tc-copy" placeholder="e.g. DBH-78500 — an existing test to copy the format from"></div>
+          </div>
+          <div class="col">
+            <div class="field"><span class="lab" id="tc-format-l">Test format</span>
+              <div class="seg" role="group" aria-labelledby="tc-format-l"><button type="button" aria-pressed="true">Manual steps</button><button type="button" aria-pressed="false">Gherkin</button></div></div>
+            <div class="policy">
+              <span class="policy-h"><svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Set by workspace policy</span>
+              <div class="policy-row"><span>Label</span><code>AI_Generated</code></div>
+              <div class="policy-row"><span>Priority</span><code>Highest</code></div>
+            </div>
+            <div class="field"><label for="tc-repo">Test repository</label>
+              <select id="tc-repo"><option>No</option><option>Yes</option></select></div>
+          </div>
+        </div>
+        <div class="tc-foot"><span class="muted">Dry-run preview · nothing is written to Jira.</span><button class="btn primary" type="submit"><svg class="icon"><use href="#i-spark"/></svg>Generate dry-run preview</button></div>
+      </form>
+    </div>
+    <div class="wf-step rv" data-step="2" hidden>
+      <div class="step-h"><h1><span class="bar"></span>2 · Review &amp; edit test cases</h1><p>Edit the generated test cases below, then create the Jira Test issues. Nothing is written to Jira until you confirm the count.</p></div>
+
+      <div class="panel rv-panel">
+        <div class="rv-head"><b>Requirements Traceability Matrix (RTM)</b><span class="rtm-story"><b id="rtmNst">2</b> stories</span></div>
+        <div class="table-wrap">
+        <table class="rtm">
+          <thead id="rtmHead"></thead>
+          <tbody id="rtmBody"></tbody>
+        </table>
+        </div>
+      </div>
+
+      <div class="panel rv-panel">
+        <div class="rv-head"><b>Test cases</b><div class="seg rv-seg" role="group" aria-label="View"><button type="button" aria-pressed="true" data-rv="edit">Editor</button><button type="button" aria-pressed="false" data-rv="prev">Preview</button></div></div>
+        <div class="rv-filter"><label for="rvAc">Filter</label><select id="rvAc"><option value="">All test cases</option><option>AC1</option><option>AC2</option><option>AC3</option></select></div>
+        <div id="rvEdit">
+          <div class="rv-cols" aria-hidden="true"><span>#</span><span>Story</span><span>AC</span><span>Priority</span><span>Type</span><span>Title</span><span></span></div>
+          <div id="rvList"></div>
+          <div class="rv-add"><button class="btn line sm" type="button" id="rvAdd"><svg class="icon"><use href="#i-plus"/></svg>Add test case</button></div>
+        </div>
+        <div id="rvPrev" hidden></div>
+      </div>
+
+      <div class="rv-bar" id="rvBar">
+        <p>Create the Jira test cases, or skip to results to download the test cases and RTM.</p>
+        <div class="btn-row"><button class="btn line" type="button" data-step-go="3">Skip → download in results</button><button class="btn primary" type="button" id="rvCreate">Create Jira test cases</button></div>
+        <div class="rv-confirm" id="rvConfirm" hidden>
+          <p id="rvConfirmTxt">Create 4 Xray Test issues in DBH, linked to their stories? This writes to Jira.</p>
+          <div class="btn-row"><button class="btn line" type="button" id="rvCancel">Cancel</button><button class="btn primary" type="button" id="rvGo">Confirm &amp; create</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" data-step="3" hidden>
+      <div class="result-h"><span class="ok"><svg class="icon"><use href="#i-test"/></svg></span><div><h3>6 test cases created in Jira</h3><p class="muted">Linked to <span class="jira">DBH-78237</span> and <span class="jira">DBH-78241</span></p></div></div>
+      <div class="kpis small">
+        <div class="kpi"><span class="k">Test cases</span><span class="v">6</span></div>
+        <div class="kpi"><span class="k">Criteria covered</span><span class="v">5 / 5</span></div>
+        <div class="kpi"><span class="k">Format</span><span class="v">Manual</span></div>
+      </div>
+      <div class="table-wrap panel">
+        <table>
+          <thead><tr><th>Test case</th><th>Jira key</th><th class="hide-sm">Covers</th></tr></thead>
+          <tbody>
+            <tr><td>Register Autodeposit with a verified email</td><td class="jira">DBH-79901</td><td class="hide-sm"><span class="ac-tag">DBH-78237 AC1</span></td></tr>
+            <tr><td>Confirmation email is sent after registration</td><td class="jira">DBH-79902</td><td class="hide-sm"><span class="ac-tag">DBH-78237 AC1</span></td></tr>
+            <tr><td>Refuse an email registered at another bank</td><td class="jira">DBH-79903</td><td class="hide-sm"><span class="ac-tag">DBH-78237 AC2</span></td></tr>
+            <tr><td>Expired one-time code is rejected</td><td class="jira">DBH-79904</td><td class="hide-sm"><span class="ac-tag">DBH-78237 AC1</span> <span class="ac-tag">DBH-78237 AC3</span></td></tr>
+            <tr><td>Transfer within the daily limit is accepted</td><td class="jira">DBH-79905</td><td class="hide-sm"><span class="ac-tag">DBH-78241 AC1</span></td></tr>
+            <tr><td>Transfer over the daily limit is blocked</td><td class="jira">DBH-79906</td><td class="hide-sm"><span class="ac-tag">DBH-78241 AC2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ex-note">Example result. Jira keys are sample data.</p>
+      <div class="btn-row"><button class="btn line" type="button" data-toast="Excel file ready to download"><svg class="icon"><use href="#i-down"/></svg>Download as Excel</button><a class="btn line" href="#tc-dashboard">View dashboard</a><button class="btn primary" type="button" data-step-go="1">Create more test cases</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- TC MODIFY -->
+<section class="view" id="v-tc-modify" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><a href="#test-cases">Test cases</a><span class="sep">/</span><b>Modify</b></nav>
+  <div class="step-h"><h1><span class="bar"></span>Modify Test Case</h1><p>Test cases you have created through Quality Guard are listed below. Open one to load it into the editor and refine it.</p></div>
+  <div class="panel mt-panel">
+    <div class="mt-head"><b>Your test cases</b><button class="btn line sm" type="button" data-toast="Choose an Excel file to import"><svg class="icon"><use href="#i-down"/></svg>Import from Excel</button></div>
+    <div class="mt-cols" aria-hidden="true"><span>#</span><span>Test cases</span><span>Format</span><span>Status</span><span></span></div>
+    <ol class="mt-list" id="mtList">
+      <li class="mt-row"><span class="mt-n">#1</span>
+        <div class="mt-main"><b class="mt-keys">DBH-86413 <span>· 9 test cases</span></b>
+          <span class="mt-meta"><span>2026-11-04, 4:40 p.m.</span></span></div>
+        <span class="mt-fmt" data-l="Format">Manual steps</span><span class="mt-stc" data-l="Status"><span class="mt-st">Draft (not created)</span></span>
+        <div class="mt-act"><button class="btn primary sm" type="button" data-toast="Loaded DBH-86413 into the editor">Open</button><button class="btn line sm mt-rm" type="button">Remove</button></div></li>
+      <li class="mt-row"><span class="mt-n">#2</span>
+        <div class="mt-main"><b class="mt-keys">DBH-61185, DBH-61206 <span>· 20 test cases</span></b>
+          <span class="mt-meta"><span>2026-11-04, 4:35 p.m.</span></span></div>
+        <span class="mt-fmt" data-l="Format">Manual steps</span><span class="mt-stc" data-l="Status"><span class="mt-st">Draft (not created)</span></span>
+        <div class="mt-act"><button class="btn primary sm" type="button" data-toast="Loaded DBH-61185 into the editor">Open</button><button class="btn line sm mt-rm" type="button">Remove</button></div></li>
+      <li class="mt-row"><span class="mt-n">#3</span>
+        <div class="mt-main"><b class="mt-keys">DBH-61185 <span>· 1 test case</span></b>
+          <span class="mt-meta"><span>2026-11-03, 12:08 p.m.</span></span></div>
+        <span class="mt-fmt" data-l="Format">Manual steps</span><span class="mt-stc" data-l="Status"><span class="mt-st ok">Jira: 1 created</span></span>
+        <div class="mt-act"><button class="btn primary sm" type="button" data-toast="Loaded DBH-61185 into the editor">Open</button><button class="btn line sm mt-rm" type="button">Remove</button></div></li>
+      <li class="mt-row"><span class="mt-n">#4</span>
+        <div class="mt-main"><b class="mt-keys">DBH-61185, DBH-61206 <span>· 18 test cases</span></b>
+          <span class="mt-meta"><span>2026-11-03, 11:59 a.m.</span></span></div>
+        <span class="mt-fmt" data-l="Format">Manual steps</span><span class="mt-stc" data-l="Status"><span class="mt-st">Draft (not created)</span></span>
+        <div class="mt-act"><button class="btn primary sm" type="button" data-toast="Loaded DBH-61185 into the editor">Open</button><button class="btn line sm mt-rm" type="button">Remove</button></div></li>
+      <li class="mt-row"><span class="mt-n">#5</span>
+        <div class="mt-main"><b class="mt-keys">DBH-61185 <span>· 9 test cases</span></b>
+          <span class="mt-meta"><span>2026-11-02, 1:42 p.m.</span></span></div>
+        <span class="mt-fmt" data-l="Format">Manual steps</span><span class="mt-stc" data-l="Status"><span class="mt-st">Draft (not created)</span></span>
+        <div class="mt-act"><button class="btn primary sm" type="button" data-toast="Loaded DBH-61185 into the editor">Open</button><button class="btn line sm mt-rm" type="button">Remove</button></div></li>
+      <li class="mt-row"><span class="mt-n">#6</span>
+        <div class="mt-main"><span class="mt-epic"><span class="mt-from">From Epic</span>DBH-55410 · Migration – Bill Payees</span><b class="mt-keys">DBH-61215, DBH-61219 <span>· 12 test cases</span></b>
+          <span class="mt-meta"><span>2026-10-16, 2:17 p.m.</span></span></div>
+        <span class="mt-fmt" data-l="Format">Gherkin (Cucumber)</span><span class="mt-stc" data-l="Status"><span class="mt-st">Draft (not created)</span></span>
+        <div class="mt-act"><button class="btn primary sm" type="button" data-toast="Loaded DBH-61215 into the editor">Open</button><button class="btn line sm mt-rm" type="button">Remove</button></div></li>
+      <li class="mt-row"><span class="mt-n">#7</span>
+        <div class="mt-main"><span class="mt-epic"><span class="mt-from">From Epic</span>DBH-55410 · Migration – Bill Payees</span><b class="mt-keys">DBH-61185, DBH-61206 <span>· 20 test cases</span></b>
+          <span class="mt-meta"><span>2026-10-16, 2:08 p.m.</span></span></div>
+        <span class="mt-fmt" data-l="Format">Manual steps</span><span class="mt-stc" data-l="Status"><span class="mt-st">Draft (not created)</span></span>
+        <div class="mt-act"><button class="btn primary sm" type="button" data-toast="Loaded DBH-61185 into the editor">Open</button><button class="btn line sm mt-rm" type="button">Remove</button></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- TC DASHBOARD -->
+<section class="view" id="v-tc-dashboard" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span class="sep">/</span><a href="#test-cases">Test cases</a><span class="sep">/</span><b>Dashboard</b></nav>
+  <div class="step-h"><h1><span class="bar"></span>Test Case Dashboard</h1><p>Coverage, volume and trends across every test case you have generated with Quality Guard.</p></div>
+  <div class="kpis five">
+    <div class="kpi"><span class="k">Test cases</span><span class="v">589</span><span class="chg up">▲ 344 last 14 days</span><span class="sub">49 generations</span></div>
+    <div class="kpi"><span class="k">Epics covered</span><span class="v">2</span><span class="chg up">▲ 1 this week</span></div>
+    <div class="kpi"><span class="k">Stories covered</span><span class="v">88</span><span class="chg up">▲ 12 this week</span></div>
+    <div class="kpi"><span class="k">Acceptance criteria captured</span><span class="v">212</span><span class="chg up">▲ 31 this week</span></div>
+    <div class="kpi"><span class="k">Created in Jira</span><span class="v">2</span><span class="chg down">▼ &lt;1% of generated</span></div>
+  </div>
+  <div class="dash-two">
+    <div class="card">
+      <h3>Test cases by format</h3>
+      <div class="hbars">
+        <div class="hb"><span class="hb-l">Manual steps</span><div class="meter"><i style="width:100%"></i></div><b>376</b></div>
+        <div class="hb"><span class="hb-l">Gherkin (Cucumber)</span><div class="meter"><i style="width:56.6%"></i></div><b>213</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Test cases by project</h3>
+      <div class="hbars">
+        <div class="hb"><span class="hb-l">DBH</span><div class="meter"><i style="width:100%"></i></div><b>589</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="dash-grid">
+    <div class="card chart">
+      <div class="gen-h"><h3>Test cases generated per week</h3>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Manual steps</span><span><i style="background:#E9A19E"></i>Gherkin</span></div></div>
+      <div class="vchart" id="vchartW"></div>
+    </div>
+    <div class="card chart">
+      <div class="gen-h"><h3>Volume trend · last 14 days</h3></div>
+      <div class="vchart" id="vchartD"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  // dashboard volume chart (sample data)
+  var CH={
+    d:{t:'Volume trend · last 14 days',lab:['23','24','25','26','27','28','29','30','31','1','2','3','4','5'],v:[[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[58],[124],[162],[0]],leg:[]},
+    w:{t:'Test cases generated per week',lab:['Sep 14','21','28','Oct 5','12','19','26','Nov 2'],v:[[20,10],[25,14],[30,18],[35,22],[45,28],[55,32],[70,39],[96,50]],leg:[['Manual steps','var(--accent)'],['Gherkin','#E9A19E']]}
+  };
+  function drawChart(k,id){
+    var c=CH[k], el=document.getElementById(id);
+    var tot=c.v.map(function(x){return x.reduce(function(a,b){return a+b;},0);}), mx=Math.max.apply(null,tot), top=Math.ceil(mx/40)*40||40;
+    var ticks=[top,top*.75,top*.5,top*.25,0];
+    el.style.setProperty('--n',c.v.length);
+    el.innerHTML='<div class="vc-axis">'+ticks.map(function(t){return '<span>'+Math.round(t)+'</span>';}).join('')+'</div><div class="vc-plot"><div class="vc-grid">'+ticks.map(function(){return '<i></i>';}).join('')+'</div>'
+      +c.v.map(function(x,i){return '<div class="vc-col" title="'+c.lab[i]+': '+tot[i]+' test cases">'+(tot[i]?'<em>'+tot[i]+'</em>':'')+'<div class="vc-stack" style="height:'+(tot[i]?tot[i]/top*100+'%':'2px')+'">'+(tot[i]?x.map(function(y,j){return '<span class="s'+j+'" style="height:'+(y/tot[i]*100)+'%"></span>';}).join(''):'<span class="zero"></span>')+'</div></div>';}).join('')
+      +'</div><div></div><div class="vc-x">'+c.lab.map(function(l){return '<span>'+l+'</span>';}).join('')+'</div>';
+  }
+  drawChart('w','vchartW'); drawChart('d','vchartD');
+
+  var views=['home','user-stories','test-cases','us-create','us-modify','us-dashboard','tc-create','tc-modify','tc-dashboard'];
+  function route(){
+    var h=(location.hash||'#home').slice(1); if(views.indexOf(h)<0) h='home';
+    views.forEach(function(v){document.getElementById('v-'+v).hidden=(v!==h);});
+    document.querySelectorAll('[data-nav]').forEach(function(a){
+      var n=a.getAttribute('data-nav');
+      a.classList.toggle('on', n===h || (n==='tc' && (h==='test-cases'||h.indexOf('tc-')===0)) || (n==='us' && (h==='user-stories'||h.indexOf('us-')===0)));
+    });
+    window.scrollTo(0,0);
+  }
+  window.addEventListener('hashchange',route); route();
+
+  document.querySelectorAll('tr[data-go]').forEach(function(r){r.addEventListener('click',function(){location.hash=r.getAttribute('data-go');});});
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){c.setAttribute('aria-pressed',c.getAttribute('aria-pressed')==='true'?'false':'true');});});
+  document.querySelectorAll('.seg').forEach(function(s){s.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){s.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});});});});
+
+  var toast=document.getElementById('toast'),tt;
+  function say(m){toast.textContent=m;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show');},2200);}
+  document.querySelectorAll('[data-toast]').forEach(function(b){b.addEventListener('click',function(){say(b.getAttribute('data-toast'));});});
+  document.getElementById('storyForm').addEventListener('submit',function(e){e.preventDefault();say('2 stories drafted from BNE-2207');});
+  // switch key label with "Create by"
+  document.querySelectorAll('#tc-by button').forEach(function(b){b.addEventListener('click',function(){
+    var epic=b.textContent.trim()==='Epic';
+    document.getElementById('tc-src-l').textContent=epic?'Jira Epic':'Jira User Story';
+    document.getElementById('tc-src').placeholder=epic?'DBH-70112, DBH-70345':'DBH-78237, DBH-75525, DBH-79840';
+  });});
+  // create test case workflow
+  var wfView=document.getElementById('v-tc-create');
+  function goStep(n){
+    wfView.querySelectorAll('[data-step]').forEach(function(c){c.hidden=c.getAttribute('data-step')!==String(n);});
+    wfView.querySelectorAll('.stepper .step').forEach(function(b,k){var i=k+1; if(i===n)b.setAttribute('aria-current','step'); else b.removeAttribute('aria-current'); b.classList.toggle('done',i<n);});
+    wfView.querySelectorAll('.stepper .link').forEach(function(l,k){l.classList.toggle('done',k+1<n);});
+    window.scrollTo(0,0);
+  }
+  wfView.querySelectorAll('[data-step-go]').forEach(function(b){b.addEventListener('click',function(){goStep(+b.getAttribute('data-step-go'));});});
+  document.getElementById('tcForm').addEventListener('submit',function(e){e.preventDefault();goStep(2);say('Dry-run preview ready: 6 test cases from DBH-78237, DBH-78241');});
+
+
+  // ---- Review step (RTM + editor/preview) ----
+  (function(){
+    var ACS1=[
+      ['AC1','<i>Given</i> a client with a chequing account whose email is not registered anywhere, <i>When</i> they register the email for Autodeposit and confirm the one-time code, <i>Then</i> Autodeposit is active <i>And</i> a confirmation email is sent.'],
+      ['AC2','<i>Given</i> the email is already registered for Autodeposit at another bank, <i>When</i> the client tries to register it, <i>Then</i> registration is refused and the client sees how to transfer it.'],
+      ['AC3','<i>Given</i> the one-time code has expired, <i>When</i> the client enters it, <i>Then</i> the code is rejected and the client can request a new one.']
+    ];
+    var STORIES=[
+      {key:'DBH-78237',title:'Register email for e-Transfer Autodeposit',acs:ACS1},
+      {key:'DBH-78241',title:'Enforce the daily e-Transfer send limit',acs:[
+        ['AC1','<i>Given</i> a client has sent $2,500 today, <i>When</i> they send another $400, <i>Then</i> the transfer is accepted and the remaining daily limit shows $100.'],
+        ['AC2','<i>Given</i> a client has reached the $3,000 daily limit, <i>When</i> they try to send another transfer, <i>Then</i> it is blocked and the message shows when the limit resets.']]}
+    ];
+    function story(k){for(var i=0;i<STORIES.length;i++)if(STORIES[i].key===k)return STORIES[i];return STORIES[0];}
+    var TCS=[
+      {s:'DBH-78237',ac:['AC1'],pr:'Highest',ty:'Positive',t:'TC - Register Autodeposit with a verified email',st:[
+        ['Log in to online banking.','Preconditions: personal client credentials; one chequing account; email not registered for Autodeposit.','Login succeeds.'],
+        ['Open Interac e-Transfer settings and select Autodeposit.','None','The Autodeposit registration form opens.'],
+        ['Enter the email, confirm the one-time code and choose the chequing account.','Email: client@example.ca','Autodeposit is shown as active for the email.']]},
+      {s:'DBH-78237',ac:['AC1'],pr:'High',ty:'Positive',t:'TC - Confirmation email is sent after registration',st:[
+        ['Complete Autodeposit registration.','Preconditions: as in TC1.','Registration succeeds.'],
+        ['Open the client’s mailbox.','None','A confirmation email from BNE is received within 5 minutes.']]},
+      {s:'DBH-78237',ac:['AC2'],pr:'Highest',ty:'Negative',t:'TC - Refuse an email registered at another bank',st:[
+        ['Log in to online banking.','Preconditions: email already registered for Autodeposit at another institution.','Login succeeds.'],
+        ['Start Autodeposit registration with that email and confirm the code.','None','Registration is refused. The message explains how to move Autodeposit from the other bank.']]},
+      {s:'DBH-78237',ac:['AC1','AC3'],pr:'Medium',ty:'Edge',t:'TC - Expired one-time code is rejected',st:[
+        ['Start Autodeposit registration and wait until the code expires.','Code lifetime: 10 minutes','The code expires.'],
+        ['Enter the expired code.','None','The code is rejected and a Send new code option is shown.']]},
+      {s:'DBH-78241',ac:['AC1'],pr:'High',ty:'Positive',t:'TC - Transfer within the daily limit is accepted',st:[
+        ['Log in to online banking.','Preconditions: $2,500 already sent today.','Login succeeds.'],
+        ['Send an Interac e-Transfer of $400.','Amount: $400','The transfer is accepted and the remaining daily limit shows $100.']]},
+      {s:'DBH-78241',ac:['AC2'],pr:'Highest',ty:'Negative',t:'TC - Transfer over the daily limit is blocked',st:[
+        ['Log in to online banking.','Preconditions: $3,000 already sent today.','Login succeeds.'],
+        ['Send an Interac e-Transfer of $50.','Amount: $50','The transfer is blocked and the message shows when the limit resets.']]}
+    ];
+    function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    function sel(opts,v,lab){return '<select aria-label="'+lab+'">'+opts.map(function(o){return '<option'+(o===v?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';}
+    var list=document.getElementById('rvList');
+    function parseAc(v){return (v.toUpperCase().match(/AC\s*\d+/g)||[]).map(function(x){return x.replace(/\s+/g,'');}).filter(function(x,i,a){return a.indexOf(x)===i;});}
+    function rowHTML(tc){
+      return '<div class="rv-row"><div class="rv-main"><span class="rv-n"></span><select class="rv-story" aria-label="Story">'+STORIES.map(function(x){return '<option'+(x.key===tc.s?' selected':'')+'>'+x.key+'</option>';}).join('')+'</select><input class="rv-acin" type="text" aria-label="Acceptance criteria" placeholder="e.g. AC1, AC3" value="'+esc(tc.ac.join(', '))+'">'+sel(['Highest','High','Medium','Low'],tc.pr,'Priority')+sel(['Positive','Negative','Edge'],tc.ty,'Type')+'<input class="rv-title" type="text" aria-label="Title" value="'+esc(tc.t)+'"><button type="button" class="rv-x" aria-label="Remove test case">×</button></div>'
+        +'<div class="rv-desc"><span class="rv-dl">Description</span><div class="table-wrap"><table class="rv-steps"><thead><tr><th>Step</th><th>Action</th><th>Data</th><th>Expected</th></tr></thead><tbody>'
+        +tc.st.map(function(r,i){return '<tr><td class="num">'+(i+1)+'</td><td contenteditable="true">'+esc(r[0])+'</td><td contenteditable="true">'+esc(r[1])+'</td><td contenteditable="true">'+esc(r[2])+'</td></tr>';}).join('')
+        +'</tbody></table></div></div></div>';
+    }
+    list.innerHTML=TCS.map(rowHTML).join('');
+    function rows(){return Array.prototype.slice.call(list.querySelectorAll('.rv-row'));}
+    function read(){return rows().map(function(r){var s=r.querySelectorAll('select:not(.rv-story)');return {el:r,s:r.querySelector('.rv-story').value,ac:parseAc(r.querySelector('.rv-acin').value),pr:s[0].value,ty:s[1].value,t:r.querySelector('.rv-title').value,st:Array.prototype.map.call(r.querySelectorAll('.rv-steps tbody tr'),function(tr){return [tr.cells[1].textContent,tr.cells[2].textContent,tr.cells[3].textContent];})};});}
+    function refresh(){
+      var d=read(), fv=document.getElementById('rvAc').value.split('|'), fs=fv[0], fa=fv[1]||'';
+      function match(t){return !fs||(t.s===fs&&(!fa||t.ac.indexOf(fa)>-1));}
+      d.forEach(function(t,i){t.el.querySelector('.rv-n').textContent=i+1; t.el.hidden=!match(t); var ids=story(t.s).acs.map(function(a){return a[0];}), bad=!t.ac.length||t.ac.some(function(x){return ids.indexOf(x)<0;}); var inp=t.el.querySelector('.rv-acin'); inp.classList.toggle('bad',bad); inp.title=bad?'Use criteria from '+t.s+': '+ids.join(', '):'';});
+      var cov=0;
+      d.forEach(function(t,i){t.i=i+1;});
+      document.getElementById('rtmHead').innerHTML='<tr><th class="rtm-c-ac">Acceptance criterion</th><th class="rtm-c-tests">Test case</th><th class="rtm-c-ty">Type</th><th class="rtm-c-cov">Coverage</th></tr>';
+      var nAc=0;
+      document.getElementById('rtmBody').innerHTML=STORIES.map(function(S){
+       var sc=0; nAc+=S.acs.length;
+       var inner=S.acs.map(function(a,ai){
+        var hits=d.filter(function(t){return t.s===S.key&&t.ac.indexOf(a[0])>-1;}); if(hits.length){cov++;sc++;}
+        var n=Math.max(hits.length,1), grp=' class="g'+(ai%2)+(hits.length?'':' uncov')+'"';
+        var acCell='<td class="rtm-c-ac" rowspan="'+n+'"><div class="rtm-acw"><span class="rtm-ac">'+a[0]+'</span><p class="rtm-crit" tabindex="0" title="Click to expand">'+a[1]+'</p></div></td>';
+        var covCell='<td class="rtm-c-cov" rowspan="'+n+'">'+(hits.length?'<span class="rtm-n ok">'+hits.length+' test'+(hits.length>1?'s':'')+'</span>':'<span class="rtm-n no">Not covered</span>')+'</td>';
+        if(!hits.length) return '<tr'+grp+'>'+acCell+'<td class="rtm-c-tests"><span class="rtm-none">No test covers this criterion yet</span></td><td class="rtm-c-ty"></td>'+covCell+'</tr>';
+        return hits.map(function(t,k){
+          return '<tr'+grp+(k?' data-sub="1"':'')+'>'+(k?'':acCell)+'<td class="rtm-c-tests"><button type="button" class="rtm-lg" data-go="'+t.i+'"><b>TC'+t.i+'</b><span>'+esc(t.t.replace(/^TC - /,''))+'</span></button></td><td class="rtm-c-ty"><span class="ty '+t.ty.toLowerCase()+'">'+t.ty+'</span></td>'+(k?'':covCell)+'</tr>';
+        }).join('');
+      }).join('');
+       return '<tr class="rtm-grp"><td colspan="4"><span class="jira">'+S.key+'</span><b>'+esc(S.title)+'</b><span class="rtm-gc'+(sc<S.acs.length?' gap':'')+'">'+sc+'/'+S.acs.length+' AC covered</span></td></tr>'+inner;
+      }).join('');
+      var pct=Math.round(cov/nAc*100);
+      document.getElementById('rtmNst').textContent=STORIES.length;
+      document.getElementById('rvConfirmTxt').textContent='Create '+d.length+' Xray Test issue'+(d.length===1?'':'s')+' in DBH, linked to their stories? This writes to Jira.';
+      document.getElementById('rvPrev').innerHTML=d.filter(match).map(function(t){
+        return '<article class="pv"><h4><span class="rv-n">'+t.i+'</span>'+esc(t.t)+'</h4><p class="pv-meta"><span>'+t.ac.map(function(a){return '@'+a;}).join(' ')+'</span><span><b>Priority:</b> '+t.pr+'</span><span><b>Type:</b> '+t.ty+'</span><span><b>Story:</b> '+t.s+'</span></p><div class="table-wrap"><table class="rv-steps"><thead><tr><th>Step</th><th>Action</th><th>Data</th><th>Expected</th></tr></thead><tbody>'
+          +t.st.map(function(r,i){return '<tr><td class="num">'+(i+1)+'</td><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td></tr>';}).join('')+'</tbody></table></div></article>';
+      }).join('')||'<p class="muted" style="padding:18px">No test cases for this criterion.</p>';
+    }
+    list.addEventListener('change',refresh); list.addEventListener('input',function(e){if(e.target.classList.contains('rv-title')||e.target.classList.contains('rv-acin'))refresh();});
+    list.addEventListener('click',function(e){var x=e.target.closest('.rv-x'); if(x){x.closest('.rv-row').remove(); refresh(); say('Test case removed');}});
+    document.getElementById('rvAdd').addEventListener('click',function(){
+      var fv=document.getElementById('rvAc').value.split('|');
+      list.insertAdjacentHTML('beforeend',rowHTML({s:fv[0]||STORIES[0].key,ac:[fv[1]||'AC1'],pr:'Medium',ty:'Positive',t:'TC - New test case',st:[['','','']]})); refresh();
+      var r=rows().pop(); r.querySelector('.rv-title').select();
+    });
+    document.getElementById('rvAc').innerHTML='<option value="">All stories and criteria</option>'+STORIES.map(function(S){return '<optgroup label="'+S.key+' · '+esc(S.title)+'"><option value="'+S.key+'|">All of '+S.key+'</option>'+S.acs.map(function(a){return '<option value="'+S.key+'|'+a[0]+'">'+S.key+' · '+a[0]+'</option>';}).join('')+'</optgroup>';}).join('');
+    document.getElementById('rvAc').addEventListener('change',refresh);
+    var rtmPanel=document.getElementById('rtmBody').closest('.rv-panel');
+    rtmPanel.addEventListener('click',function(e){
+      var c=e.target.closest('.rtm-crit'); if(c){c.classList.toggle('open');return;}
+      var g=e.target.closest('[data-go]'); if(!g)return;
+      document.querySelector('.rv-seg [data-rv="edit"]').click(); document.getElementById('rvAc').value=''; refresh();
+      var r=rows()[+g.getAttribute('data-go')-1]; if(r){r.scrollIntoView({behavior:'smooth',block:'center'}); r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash');}
+    });
+    document.querySelectorAll('.rv-seg button').forEach(function(b){b.addEventListener('click',function(){
+      document.querySelectorAll('.rv-seg button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
+      var prev=b.getAttribute('data-rv')==='prev'; refresh();
+      document.getElementById('rvEdit').hidden=prev; document.getElementById('rvPrev').hidden=!prev;
+    });});
+    var conf=document.getElementById('rvConfirm');
+    document.getElementById('rvCreate').addEventListener('click',function(){refresh(); conf.hidden=false;});
+    document.getElementById('rvCancel').addEventListener('click',function(){conf.hidden=true;});
+    document.getElementById('rvGo').addEventListener('click',function(){conf.hidden=true; goStep(3); say(read().length+' Xray Test issues created in DBH');});
+    refresh();
+  })();
+  // pick a row in Modify screens
+  document.querySelectorAll('table.pick').forEach(function(t){
+    var rows=t.querySelectorAll('tbody tr'), card=t.closest('.split').querySelector('.card');
+    rows.forEach(function(r){r.addEventListener('click',function(){
+      rows.forEach(function(x){x.classList.remove('sel');}); r.classList.add('sel');
+      card.querySelector('.ed-title').textContent=r.cells[1].textContent;
+      var id=card.querySelector('.ed-id'); if(id) id.textContent=r.cells[0].textContent;
+    });});
+  });
+  function filter(){
+    var q=document.getElementById('tcSearch').value.toLowerCase(), f=document.getElementById('tcFilter').value;
+    document.querySelectorAll('#tcTable tbody tr').forEach(function(r){
+      r.hidden=!(r.textContent.toLowerCase().indexOf(q)>-1 && (f==='All statuses'||r.cells[2].textContent.trim()===f));
+    });
+  }
+  document.querySelectorAll('.mt-rm').forEach(function(b){b.addEventListener('click',function(){var r=b.closest('.mt-row');say('Removed '+r.querySelector('.mt-keys').firstChild.textContent.trim());r.remove();});});
+  document.getElementById('usSearch').addEventListener('input',function(e){
+    var q=e.target.value.toLowerCase();
+    document.querySelectorAll('#usTable tbody tr').forEach(function(r){r.hidden=r.textContent.toLowerCase().indexOf(q)<0;});
+  });
+})();
+</script>
+
+</body></html>
